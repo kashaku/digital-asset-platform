@@ -1,0 +1,11 @@
+{
+  "name": "asset-chain-workspace",
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "cd frontend && npm install && cd ../contracts && npm install",
+    "dev": "cd frontend && npm run dev",
+    "compile": "cd contracts && npx hardhat compile",
+    "test": "cd contracts && npx hardhat test",
+    "node": "cd contracts && npx hardhat node"
+  }
+}

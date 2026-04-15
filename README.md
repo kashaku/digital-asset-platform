@@ -1,35 +1,85 @@
-目录结构参考下表
+# 基于区块链的数字资产确权与流通系统
+
+本项目是一个去中心化应用（DApp），旨在利用区块链技术解决数字资产所有权确权难、流通成本高以及创作者版税无法保障等痛点。系统基于 **ERC-721** 标准，结合 **IPFS** 分布式存储，实现了资产的“链上确权、链下存储”。
+
+## 🚀 关键工具介绍
+
+| 工具            | 角色             | 核心作用                                                                      |
+| :-------------- | :--------------- | :---------------------------------------------------------------------------- |
+| **Hardhat**     | 智能合约开发框架 | 负责合约的编译、自动化测试、部署脚本管理以及本地模拟节点的运行。              |
+| **Vite**        | 前端构建工具     | 为 React 提供极速的热更新和构建体验，显著提升前端开发效率。                   |
+| **Ethers.js**   | 区块链交互库     | 充当 React 前端与 Polygon/Ethereum 之间的桥梁，处理签名、交易发送和数据读取。 |
+| **IPFS**        | 分布式存储       | 存储高清图片等大体积资产文件，并返回全球唯一的 CID，实现数据的去中心化存储。  |
+| **TailwindCSS** | 样式框架         | 快速构建响应式、简洁的 UI 界面。                                              |
+
+## 🛠️ 环境搭建
+
+在开始之前，请确保你的开发环境已安装以下工具：
+
+1.  **Node.js**: 建议版本 `v18.0.0` 或更高。
+2.  **Git**: 用于版本控制。
+3.  **MetaMask**: 浏览器需安装小狐狸钱包插件，并配置好 **Polygon Amoy** 测试网。
+4.  **构建工具**: Windows 用户建议确保 `npm` 已正确配置；Linux/WSL 用户建议安装 `build-essential` 以支持 `make` 指令。
+
+## 📂 文件结构
+
+项目采用 **Monorepo**（单体仓库）结构，方便前后端代码协同。
+
+```text
+.
+├── contracts/              # 智能合约工作区 (Hardhat 项目)
+│   ├── contracts/          # Solidity 源码 (ERC-721 逻辑)
+│   ├── scripts/            # 部署与分发脚本
+│   ├── test/               # 合约自动化测试用例
+│   └── hardhat.config.js   # 链上网络与编译器配置
+├── frontend/               # 前端工作区 (React + Vite)
+│   ├── src/                # 前端源码
+│   │   ├── abis/           # 存放合约编译后的 ABI 接口
+│   │   ├── hooks/          # Web3 交互逻辑 (useWallet 等)
+│   │   └── components/     # UI 组件
+│   └── vite.config.js      # Vite 配置文件
+├── package.json            # 根目录配置文件 (管理全局脚本)
+└── README.md               # 项目说明文档
 ```
-asset-chain/
-├── .github/                    # GitHub Actions CI/CD 配置（自动化测试与部署）
-├── contracts/                  # 👉 [智能合约组工作区]
-│   ├── contracts/              # Solidity 源码目录
-│   │   ├── ERC721Token.sol     # 核心 NFT 合约
-│   │   └── Marketplace.sol     # 交易与版税逻辑合约
-│   ├── scripts/                # 部署脚本 (如 deploy.js)
-│   ├── test/                   # 测试用例目录 (非常重要，PM/QA主要阵地)
-│   ├── hardhat.config.js       # Hardhat 链上环境与网络配置
-│   └── package.json            # 合约依赖 (OpenZeppelin等)
-│
-├── frontend/                   # 👉 [前端组工作区]
-│   ├── public/                 # 静态资源
-│   ├── src/
-│   │   ├── abis/               # 存放从 contracts 编译生成的 ABI 文件
-│   │   ├── components/         # 页面 UI 组件 (使用 TailwindCSS)
-│   │   ├── hooks/              # 自定义 Hooks (如 useWallet, 去调用 Ethers.js)
-│   │   ├── utils/              # 工具函数 (如 ipfsUploader.js 处理 IPFS 上传)
-│   │   ├── App.jsx             # 前端入口
-│   │   └── index.css           # 全局样式/Tailwind 引入
-│   ├── package.json            # 前端依赖 (React, Ethers.js, Tailwind等)
-│   └── tailwind.config.js      # Tailwind 配置文件
-│
-├── docs/                       # 👉 [项目文档与架构统筹]
-│   ├── api-design.md           # 智能合约函数接口规范
-│   ├── system-design.md        # PPT中提到的架构图、流程图
-│   └── meeting-notes.md        # 团队沟通记录
-│
-├── .editorconfig               # 统一跨编辑器的缩进和编码格式
-├── .gitignore                  # 忽略 node_modules, .env 等文件
-├── Makefile                    # 封装常用终端命令（如 make install, make node）
-└── README.md                   # 项目首页介绍、启动指南
+
+## 📜 脚本使用指南
+
+本项目已在根目录封装了快捷脚本，你无需频繁切换目录即可完成常用操作。
+
+### 1. 初始化安装
+
+克隆项目后，一键安装前后端所有依赖：
+
+```bash
+npm run install:all
 ```
+
+### 2. 合约开发 (后端)
+
+- **编译合约**：将 Solidity 转换为 ABI 和字节码。
+  ```bash
+  npm run compile
+  ```
+- **运行测试**：在部署前验证合约逻辑（版税、铸造等）是否正确。
+  ```bash
+  npm run test
+  ```
+- **启动本地节点**：在本地启动一个模拟的区块链环境，用于快速调试。
+  ```bash
+  npm run node
+  ```
+
+### 3. 前端开发
+
+- **启动预览**：开启本地开发服务器。
+  ```bash
+  npm run dev
+  ```
+
+---
+
+## 📝 协作注意事项
+
+- **敏感信息**：请勿将 `.env` 文件提交到 GitHub。该文件应包含你的私钥和节点 API Key。
+- **ABI 同步**：每当修改 `contracts/contracts/` 下的合约代码并重新编译后，请务必将生成的 JSON 文件同步更新至 `frontend/src/abis/` 目录。
+- **网络切换**：开发环境下请统一使用 Polygon Amoy 测试网，并在 MetaMask 中领取足够的测试币（Faucet）。
