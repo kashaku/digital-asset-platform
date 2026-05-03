@@ -18,3 +18,12 @@
 
 # Hardhat coverage reports
 /coverage
+
+# Environment variables (contains private keys!)
+.env
+
+# Hardhat Ignition deployment data
+/ignition/deployments
+
+# Solidity coverage
+/coverage.json
