@@ -1,30 +1,19 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import HomePage from '@/pages/home-page';
 import MarketPage from '@/pages/market';
 import ProfilePage from '@/pages/profile';
 import AssertPage from '@/pages/assert';
 import NotFoundPage from '@/pages/not-found';
 
-export const router = createBrowserRouter([
-	{
-		path: '/',
-		element: <HomePage />,
-	},
-	{
-		path: '/market',
-		element: <MarketPage />,
-	},
-	{
-		path: '/profile',
-		element: <ProfilePage />,
-	},
-	{
-		path: '/assert',
-		element: <AssertPage />,
-	},
-	{
-		path: '*',
-		element: <NotFoundPage />,
-	},
-]);
+export default function AppRoutes() {
+	return (
+		<Routes>
+			<Route path="/" element={<HomePage />} />
+			<Route path="/market" element={<MarketPage />} />
+			<Route path="/profile" element={<ProfilePage />} />
+			<Route path="/assert" element={<AssertPage />} />
+			<Route path="*" element={<NotFoundPage />} />
+		</Routes>
+	);
+}
 
