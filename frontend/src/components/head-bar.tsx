@@ -1,6 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverDescription } from './ui/popover';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
 import { useUserStore } from '@/store/user-store';
+
+import { Button } from './ui/button';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
 
 function shorten(address: string) {
 	return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
@@ -39,6 +43,7 @@ function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
 export default function HeadBar() {
 	const user = useUserStore((s) => s.user);
 	const logout = useUserStore((s) => s.logout);
+	const navigate = useNavigate();
 
 	const [open, setOpen] = useState(false);
 	const timeoutRef = useRef<number | null>(null);
@@ -59,42 +64,38 @@ export default function HeadBar() {
 		<header className="w-full border-b border-slate-100 bg-white">
 			<div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-4">
-					<a href="/" className="flex items-center gap-2 text-lg font-semibold text-indigo-600">
+					<Link to="/" className="flex items-center gap-2 text-lg font-semibold text-indigo-600">
 						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h10M4 18h16" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 						<span>AssetChain</span>
-					</a>
+					</Link>
 				</div>
 
 				<nav className="hidden md:flex gap-6 text-sm text-slate-600">
-					<a href="#">首页</a>
-					<a href="#">交易市场</a>
-					<a href="#">资产铸造</a>
-					<a href="#">个人中心</a>
+					<Link to="/">首页</Link>
+					<Link to="/market">交易市场</Link>
+					<Link to="/assert">资产铸造</Link>
+					<Link to="/profile">个人中心</Link>
 				</nav>
 
 				<div className="flex items-center gap-3">
-					<div
-						onMouseEnter={handleMouseEnter}
-						onMouseLeave={handleMouseLeave}
-						className="relative"
-					>
+					<div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
 						{user ? (
-							<Popover open={open} onOpenChange={(v: boolean) => setOpen(v)}>
+							<Popover open={open} onOpenChange={setOpen}>
 								<PopoverTrigger asChild>
-									<button
+									<Button
+										variant="ghost"
+										size="icon"
 										aria-label="用户菜单"
-										className="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-300"
+										className="h-10 w-10 rounded-full p-0"
 									>
 										<Avatar cid={user.profile?.avatarCid} size={40} />
-									</button>
+									</Button>
 								</PopoverTrigger>
 
-								<PopoverContent sideOffset={8} align="end">
+								<PopoverContent sideOffset={8} align="end" className="w-72">
 									<PopoverHeader>
 										<div className="flex items-center gap-3">
-											<div className="w-12 h-12">
-												<Avatar cid={user.profile?.avatarCid} size={48} />
-											</div>
+											<Avatar cid={user.profile?.avatarCid} size={48} />
 											<div className="flex flex-col">
 												<PopoverTitle>{user.profile?.displayName ?? shorten(user.address)}</PopoverTitle>
 												<PopoverDescription className="text-xs">{shorten(user.address)}</PopoverDescription>
@@ -102,33 +103,33 @@ export default function HeadBar() {
 										</div>
 									</PopoverHeader>
 
-									<div className="mt-2 flex flex-col gap-2">
+									<div className="mt-2 flex flex-col gap-3">
 										<div className="text-sm text-slate-700">角色：{user.role}</div>
 										<div className="text-sm text-slate-500">已创作：{user.createdCount ?? 0}</div>
-
-										<div className="mt-2 flex gap-2">
-											<button
-												onClick={() => {
-													logout();
-													// 注：登出后占位跳转
-													window.location.href = '/';
-												}}
-												className="ml-auto rounded-md bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
-											>
-												登出
-											</button>
-										</div>
+										<Button
+											variant="destructive"
+											size="sm"
+											className="w-fit"
+											onClick={() => {
+												logout();
+												navigate('/');
+											}}
+										>
+											登出
+										</Button>
 									</div>
 								</PopoverContent>
 							</Popover>
 						) : (
-							<button
-								onClick={() => (window.location.href = '/login')}
+							<Button
+								variant="ghost"
+								size="icon"
 								aria-label="登录"
-								className="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-300"
+								className="h-10 w-10 rounded-full p-0"
+								onClick={() => navigate('/profile')}
 							>
 								<Avatar size={40} />
-							</button>
+							</Button>
 						)}
 					</div>
 				</div>
