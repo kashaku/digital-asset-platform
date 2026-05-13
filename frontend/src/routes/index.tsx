@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import HomePage from '@/pages/home-page';
-import MarketPage from '@/pages/market';
+import MarketPage from '@/pages/Market/market.tsx';
 import ProfilePage from '@/pages/profile';
 import AssertPage from '@/pages/assert';
 import NotFoundPage from '@/pages/not-found';
