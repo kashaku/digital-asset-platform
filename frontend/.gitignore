@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated ABIs (run deploy to populate)
+src/abis/*.json
+!src/abis/.gitkeep
