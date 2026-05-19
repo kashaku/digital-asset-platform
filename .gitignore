@@ -6,6 +6,12 @@ node_modules/
 .env.local
 .env.*.local
 
+# AI agents
+CLAUDE.md
+.specstory/
+.cursor/
+.copilot/
+
 # OS files
 .DS_Store
 Thumbs.db
