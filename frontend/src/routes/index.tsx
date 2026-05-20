@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
 import HomePage from '@/pages/home-page';
-import MarketPage from '@/pages/Market/market.tsx';
-import ProfilePage from '@/pages/profile';
-import AssertPage from '@/pages/assert';
+import MarketPage from '@/pages/Market/market';
+import ProfilePage from '@/pages/Profile/profile';
+import AssertPage from '@/pages/Assert/assert';
 import NotFoundPage from '@/pages/not-found';
 
 export default function AppRoutes() {
