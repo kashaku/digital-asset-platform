@@ -5,6 +5,7 @@ import { MintBasicForm } from "@/pages/Assert/components/mint-basic-form";
 import { MintSubmitCard } from "@/pages/Assert/components/mint-submit-card";
 import { RoyaltyConfigCard } from "@/pages/Assert/components/royalty-config-card";
 import { useMintAsset } from "@/hooks/useMintAsset";
+import HeadBar from "@/components/head-bar.tsx";
 
 export default function AssertPage() {
   const {
@@ -25,6 +26,8 @@ export default function AssertPage() {
   };
 
   return (
+            <div className="min-h-screen bg-slate-50">
+      <HeadBar />
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-10 2xl:px-14">
       <section className="mx-auto w-full max-w-3xl">
         <div className="mb-8 text-center">
@@ -75,5 +78,6 @@ export default function AssertPage() {
         </form>
       </section>
     </main>
+   </div>
   );
 }
