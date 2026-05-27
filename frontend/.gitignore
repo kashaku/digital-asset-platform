@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Generated ABIs (run deploy to populate)
+# Generated ABIs & config (run sync to populate)
 src/abis/*.json
 !src/abis/.gitkeep
+src/config/contract.ts

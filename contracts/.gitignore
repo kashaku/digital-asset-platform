@@ -25,5 +25,8 @@
 # Hardhat Ignition deployment data
 /ignition/deployments
 
+# Script deployment output
+/deployments
+
 # Solidity coverage
 /coverage.json
