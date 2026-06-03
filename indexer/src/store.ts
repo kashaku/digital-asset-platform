@@ -45,8 +45,11 @@ class Store {
     return this.#listings.get(tokenId);
   }
 
-  getListings(page: number, pageSize: number): { items: ListingRecord[]; total: number } {
-    const all = Array.from(this.#listings.values()).sort((a, b) => b.tokenId - a.tokenId);
+  getListings(page: number, pageSize: number, filter?: (listing: ListingRecord) => boolean): { items: ListingRecord[]; total: number } {
+    let all = Array.from(this.#listings.values()).sort((a, b) => b.tokenId - a.tokenId);
+    if (filter) {
+      all = all.filter(filter);
+    }
     return this.#paginate(all, page, pageSize);
   }
 

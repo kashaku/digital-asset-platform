@@ -54,17 +54,62 @@ describe('API', () => {
       expect(res.body.total).toBe(0);
     });
 
-    it('price 序列化为字符串', async () => {
+    it('按 seller / creator / tokenId 过滤 listings', async () => {
       store.setListing({
-        tokenId: 0,
-        price: 500_000_000_000_000_000n,
-        seller: '0xseller0',
-        tokenURI: 'ipfs://test-0',
-        creator: '0xcreator0',
+        tokenId: 1,
+        price: 100n,
+        seller: '0xSellerA',
+        tokenURI: 'ipfs://test-1',
+        creator: '0xCreatorA',
+      });
+      store.setListing({
+        tokenId: 2,
+        price: 200n,
+        seller: '0xSellerB',
+        tokenURI: 'ipfs://test-2',
+        creator: '0xCreatorA',
+      });
+      store.setListing({
+        tokenId: 3,
+        price: 300n,
+        seller: '0xSellerA',
+        tokenURI: 'ipfs://test-3',
+        creator: '0xCreatorB',
       });
 
-      const res = await request(app()).get('/api/listings');
-      expect(typeof res.body.items[0].price).toBe('string');
+      const bySeller = await request(app()).get('/api/listings?seller=0xsellera');
+      expect(bySeller.status).toBe(200);
+      expect(bySeller.body.total).toBe(2);
+      expect(bySeller.body.items.map((i: { tokenId: number }) => i.tokenId)).toEqual([3, 1]);
+
+      const byCreator = await request(app()).get('/api/listings?creator=0xcreatora');
+      expect(byCreator.status).toBe(200);
+      expect(byCreator.body.total).toBe(2);
+      expect(byCreator.body.items.map((i: { tokenId: number }) => i.tokenId)).toEqual([2, 1]);
+
+      const byTokenId = await request(app()).get('/api/listings?tokenId=2');
+      expect(byTokenId.status).toBe(200);
+      expect(byTokenId.body.total).toBe(1);
+      expect(byTokenId.body.items[0].tokenId).toBe(2);
+    });
+
+    it('按价格区间过滤 listings', async () => {
+      store.setListing({ tokenId: 1, price: 100n, seller: '0xseller', tokenURI: 'ipfs://test-1', creator: '0xcreator' });
+      store.setListing({ tokenId: 2, price: 200n, seller: '0xseller', tokenURI: 'ipfs://test-2', creator: '0xcreator' });
+      store.setListing({ tokenId: 3, price: 300n, seller: '0xseller', tokenURI: 'ipfs://test-3', creator: '0xcreator' });
+
+      const res = await request(app()).get('/api/listings?minPrice=150&maxPrice=250');
+      expect(res.status).toBe(200);
+      expect(res.body.total).toBe(1);
+      expect(res.body.items[0].tokenId).toBe(2);
+    });
+
+    it('非法 filter 参数返回 400', async () => {
+      const badPrice = await request(app()).get('/api/listings?minPrice=abc');
+      expect(badPrice.status).toBe(400);
+
+      const badTokenId = await request(app()).get('/api/listings?tokenId=abc');
+      expect(badTokenId.status).toBe(400);
     });
   });
 
