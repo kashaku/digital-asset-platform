@@ -2,6 +2,18 @@ import { BrowserProvider, type JsonRpcSigner } from 'ethers';
 import { create } from 'zustand';
 
 export const METAMASK_DOWNLOAD_URL = 'https://metamask.io/download/';
+export const LOCAL_CHAIN_ID = 31337;
+export const LOCAL_CHAIN_ID_HEX = '0x7a69';
+export const LOCAL_CHAIN_CONFIG = {
+  chainId: LOCAL_CHAIN_ID_HEX,
+  chainName: 'Hardhat Localhost',
+  rpcUrls: ['http://127.0.0.1:8545'],
+  nativeCurrency: {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+};
 
 type WalletError = {
   code?: number | string;
@@ -22,6 +34,7 @@ interface WalletState {
   hasMetaMask: boolean;
   error: string | null;
   connect: () => Promise<void>;
+  switchToLocalNetwork: () => Promise<void>;
   disconnect: () => void;
   syncAccount: (accounts: string[]) => Promise<void>;
   syncChain: (chainId: string) => void;
@@ -179,6 +192,62 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         ...clearSignatureState(),
         isSigning: false,
         error: normalizeWalletError(error, '已取消签名。'),
+      });
+    }
+  },
+
+  switchToLocalNetwork: async () => {
+    const ethereum = window.ethereum;
+
+    if (!ethereum?.isMetaMask) {
+      set({
+        hasMetaMask: false,
+        error: `请先安装 MetaMask 插件：${METAMASK_DOWNLOAD_URL}`,
+      });
+      return;
+    }
+
+    try {
+      set({ hasMetaMask: true, error: null });
+
+      const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+      if (currentChainId === LOCAL_CHAIN_ID_HEX) {
+        set({ chainId: LOCAL_CHAIN_ID });
+        return;
+      }
+
+      try {
+        await ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: LOCAL_CHAIN_ID_HEX }],
+        });
+      } catch (error) {
+        const walletError = error as WalletError;
+        if (walletError.code !== 4902) {
+          throw error;
+        }
+
+        await ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [LOCAL_CHAIN_CONFIG],
+        });
+      }
+
+      const provider = new BrowserProvider(ethereum);
+      const accounts = getAccounts(await ethereum.request({ method: 'eth_accounts' }));
+      const signer = accounts[0] ? await provider.getSigner() : null;
+      const network = await provider.getNetwork();
+
+      set({
+        provider,
+        signer,
+        address: accounts[0] ?? get().address,
+        chainId: Number(network.chainId),
+        error: null,
+      });
+    } catch (error) {
+      set({
+        error: normalizeWalletError(error, '已取消切换网络。'),
       });
     }
   },
