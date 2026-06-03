@@ -4,6 +4,11 @@ import { useWalletStore } from '../store/wallet';
 import { FIXED_PRICE_ADDRESS } from '../config/contract';
 import FixedPriceMarketABI from '../abis/FixedPriceMarket.json';
 
+import {
+  fetchListing,
+  type ListingItem,
+} from '../services/indexer'
+
 /**
  * useMarket — FixedPriceMarket 合约交互（上架 / 购买 / 取消上架 / 查询）
  */
@@ -13,12 +18,7 @@ function assertABI(name: string, abi: readonly unknown[]): asserts abi is readon
 
 export function useMarket() {
   assertABI("FixedPriceMarket", FixedPriceMarketABI.abi);
-  const { provider, signer } = useWalletStore();
-
-  const readContract = useMemo(() => {
-    if (!provider) return null;
-    return new Contract(FIXED_PRICE_ADDRESS, FixedPriceMarketABI.abi, provider);
-  }, [provider]);
+  const { signer } = useWalletStore();
 
   const writeContract = useMemo(() => {
     if (!signer) return null;
@@ -49,14 +49,15 @@ export function useMarket() {
     return await tx.wait();
   }, [writeContract]);
 
-  const getListing = useCallback(async (tokenId: number): Promise<{ price: bigint; seller: string }> => {
-    if (!readContract) throw new Error("请先连接钱包");
-    const listing = await readContract.listings(tokenId);
-    return { price: listing.price, seller: listing.seller };
-  }, [readContract]);
+  const getListing = useCallback(async (tokenId: number): Promise<ListingItem> => {
+    const listing = await fetchListing(tokenId);
+    if (!listing) {
+      throw new Error(`未找到 tokenId=${tokenId} 的上架信息`);
+    }
+    return listing;
+  }, [fetchListing]);
 
   return {
-    readContract,
     writeContract,
     listForSale,
     buyAsset,

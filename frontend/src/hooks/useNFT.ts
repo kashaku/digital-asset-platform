@@ -3,6 +3,7 @@ import { Contract } from 'ethers';
 import { useWalletStore } from '../store/wallet';
 import { NFT_ADDRESS } from '../config/contract';
 import DigitalAssetNFTABI from '../abis/DigitalAssetNFT.json';
+import { fetchNFT, fetchNFTs, type NFTItem } from '../services/indexer';
 
 /**
  * useNFT — DigitalAssetNFT 合约交互（铸造 + 查询）
@@ -59,6 +60,23 @@ export function useNFT() {
     return await readContract.totalMinted();
   }, [readContract]);
 
+  const getNFT = useCallback(async (tokenId: number): Promise<NFTItem> => {
+    const nft = await fetchNFT(tokenId);
+    if (!nft) throw new Error(`未找到 tokenId=${tokenId} 的 NFT`);
+    return nft;
+  }, []);
+
+  const getNFTs = useCallback(async (page = 1, pageSize = 20): Promise<NFTItem[]> => {
+    const result = await fetchNFTs({ page, pageSize });
+    return result.items;
+  }, []);
+
+  const getNFTsByCreator = useCallback(async (creator: string): Promise<NFTItem[]> => {
+    const result = await fetchNFTs({ page: 1, pageSize: 100 });
+    const normalized = creator.toLowerCase();
+    return result.items.filter((nft) => nft.creator.toLowerCase() === normalized);
+  }, []);
+
   return {
     readContract,
     writeContract,
@@ -67,5 +85,8 @@ export function useNFT() {
     getOwnerOf,
     getRoyaltyInfo,
     getTotalMinted,
+    getNFT,
+    getNFTs,
+    getNFTsByCreator,
   };
 }
