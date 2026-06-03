@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { useMarket } from "@/hooks/useMarket";
 import {
   calculateMarketStats,
   fetchMarketAssets,
@@ -69,6 +70,7 @@ export function useMarketAssets() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null);
+  const market = useMarket();
 
   useEffect(() => {
     let ignored = false;
@@ -165,14 +167,12 @@ export function useMarketAssets() {
         throw new Error("未找到待购买资产");
       }
 
-      /**
-       * 接口文档要求购买资产通过 Web3 合约接口完成：
-       * services/web3/marketContract.ts -> buyAsset(tokenId, priceWei)
-       *
-       * 这里先保留页面入口，避免误用 REST API 代替用户签名。
-       */
-      throw new Error(
-        `购买资产需要接入 Web3 合约接口：buyAsset("${targetAsset.tokenId}", priceWei)。`,
+      await market.buyAsset(Number(targetAsset.tokenId), String(targetAsset.price));
+
+      setRawAssets((currentAssets) =>
+        currentAssets.map((asset) =>
+          asset.id === assetId ? { ...asset, status: "sold" } : asset,
+        ),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "购买资产失败");
