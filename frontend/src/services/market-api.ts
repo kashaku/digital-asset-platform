@@ -1,4 +1,7 @@
 import type { MarketAsset, MarketStats } from "@/types/market";
+import { FIXED_PRICE_ADDRESS } from "@/config/contract";
+import { fetchListings, type ListingItem } from "@/services/indexer";
+import { resolveTokenMetadata } from "@/services/ipfs-api";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
@@ -229,6 +232,54 @@ function weiToMatic(priceWei?: string) {
   }
 }
 
+function resolveImageUrl(uri?: string) {
+  if (!uri) {
+    return "/favicon.svg";
+  }
+
+  if (uri.startsWith("ipfs://")) {
+    return `https://ipfs.io/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
+  }
+
+  return uri;
+}
+
+async function listingToMarketAsset(item: ListingItem): Promise<MarketAsset> {
+  const metadata = await resolveTokenMetadata(item.tokenURI);
+  const imageUrl = resolveImageUrl(metadata?.imageUrl ?? metadata?.image);
+  const category =
+    metadata?.attributes
+      ?.find((attr) => attr.trait_type?.toLowerCase() === "category")
+      ?.value ?? "art";
+
+  return {
+    id: `asset-${item.tokenId}`,
+    tokenId: String(item.tokenId),
+    title: metadata?.name || `Asset #${item.tokenId}`,
+    description: metadata?.description || item.tokenURI || "链上数字资产",
+    category: normalizeCategory({
+      tokenId: String(item.tokenId),
+      name: metadata?.name || "",
+      imageUrl,
+      owner: item.seller,
+      creator: item.creator,
+      price: item.price,
+      category,
+    }),
+    imageUrl,
+    creator: item.creator,
+    owner: item.seller,
+    price: weiToMatic(item.price),
+    currency: "ETH",
+    royaltyRate: 0,
+    chain: "Polygon",
+    contractAddress: FIXED_PRICE_ADDRESS,
+    ipfsCid: metadata?.properties?.cid ?? item.tokenURI.replace(/^ipfs:\/\//, ""),
+    listedAt: new Date().toISOString(),
+    status: "listed",
+  };
+}
+
 function extractCid(item: ApiMarketAssetItem) {
   const candidates = [
     item.metadata?.properties?.cid,
@@ -351,7 +402,19 @@ export async function fetchMarketAssets(
   params: GetMarketAssetsParams = {},
 ): Promise<MarketAsset[]> {
   if (!API_BASE_URL) {
-    return mockMarketAssets;
+    try {
+      const data = await fetchListings({
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 48,
+        seller: params.seller,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+      });
+
+      return await Promise.all(data.items.map(listingToMarketAsset));
+    } catch {
+      return mockMarketAssets;
+    }
   }
 
   try {

@@ -9,6 +9,7 @@ export interface NFTItem {
   tokenId: number;
   tokenURI: string;
   creator: string;
+  owner: string;
 }
 
 export interface ListingItem {
