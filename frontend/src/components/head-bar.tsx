@@ -57,8 +57,8 @@ function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
 }
 
 export default function HeadBar() {
-	const user = useUserStore((s) => s.user);
-	const logout = useUserStore((s) => s.logout);
+	const user = useUserStore((state) => state.user);
+	const clearUser = useUserStore((state) => state.clearUser);
 	const wallet = useWallet();
 	const navigate = useNavigate();
 
@@ -80,8 +80,8 @@ export default function HeadBar() {
 		? '连接中...'
 		: wallet.isSigning
 			? '等待签名...'
-			: wallet.address
-				? shorten(wallet.address)
+			: wallet.address && !wallet.signature
+				? '重新签名'
 				: '连接钱包';
 
 	return (
@@ -131,13 +131,13 @@ export default function HeadBar() {
 
 									<div className="mt-2 flex flex-col gap-3">
 										<div className="text-sm text-slate-700">角色：{user.role}</div>
-										<div className="text-sm text-slate-500">已创作：{user.createdCount ?? 0}</div>
+										<div className="text-sm text-slate-500">当前链 ID：{user.lastSeenChainId ?? '未知'}</div>
 										<Button
 											variant="destructive"
 											size="sm"
 											className="w-fit"
 											onClick={() => {
-												logout();
+												clearUser();
 												wallet.disconnect();
 												navigate('/');
 											}}
@@ -156,11 +156,6 @@ export default function HeadBar() {
 									title={wallet.error ?? undefined}
 									className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 text-white shadow-md hover:from-violet-700 hover:to-blue-700"
 									onClick={() => {
-										if (wallet.address) {
-											navigate('/profile');
-											return;
-										}
-
 										void wallet.connect();
 									}}
 								>
