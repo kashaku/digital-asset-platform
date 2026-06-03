@@ -18,8 +18,16 @@ class Store {
 
   // ===== NFT =====
 
-  setNFT(record: NFTRecord) {
-    this.#nfts.set(record.tokenId, record);
+  setNFT(record: NFTRecord | Omit<NFTRecord, 'owner'>) {
+    const existing = this.#nfts.get(record.tokenId);
+    const owner = 'owner' in record ? record.owner : existing?.owner ?? record.creator;
+    this.#nfts.set(record.tokenId, { ...record, owner });
+  }
+
+  updateNFTOwner(tokenId: number, owner: string) {
+    const nft = this.#nfts.get(tokenId);
+    if (!nft) return;
+    this.#nfts.set(tokenId, { ...nft, owner });
   }
 
   getNFT(tokenId: number): NFTRecord | undefined {

@@ -2,6 +2,7 @@ export interface NFTRecord {
   tokenId: number;
   tokenURI: string;
   creator: string;
+  owner: string;
 }
 
 export interface ListingRecord {

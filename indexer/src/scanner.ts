@@ -10,7 +10,17 @@ export interface WatchedContract {
 const HANDLERS: Record<string, (log: EventLog) => void> = {
   AssetMinted(log) {
     const [tokenId, creator, tokenURI] = log.args;
-    store.setNFT({ tokenId: Number(tokenId), tokenURI, creator } as NFTRecord);
+    store.setNFT({
+      tokenId: Number(tokenId),
+      tokenURI,
+      creator,
+      owner: creator,
+    } as NFTRecord);
+  },
+
+  Transfer(log) {
+    const [, to, tokenId] = log.args;
+    store.updateNFTOwner(Number(tokenId), to);
   },
 
   AssetListed(log) {
