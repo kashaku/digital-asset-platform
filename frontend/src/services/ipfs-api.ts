@@ -5,12 +5,91 @@ import type {
 } from "@/types/mint";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const MOCK_METADATA_STORAGE_KEY = "assetchain:mock-metadata";
 
 type ApiResponse<T> = {
   code: number;
   message: string;
   data: T | null;
 };
+
+export type TokenMetadata = {
+  name?: string;
+  description?: string;
+  image?: string;
+  imageUrl?: string;
+  attributes?: Array<{
+    trait_type?: string;
+    value?: string;
+  }>;
+  properties?: {
+    cid?: string;
+    mime?: string;
+  };
+};
+
+function readMockMetadata() {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem(MOCK_METADATA_STORAGE_KEY) ?? "{}") as Record<string, TokenMetadata>;
+  } catch {
+    return {};
+  }
+}
+
+function writeMockMetadata(tokenURI: string, metadata: TokenMetadata) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  const storedMetadata = readMockMetadata();
+  storedMetadata[tokenURI] = metadata;
+  localStorage.setItem(MOCK_METADATA_STORAGE_KEY, JSON.stringify(storedMetadata));
+}
+
+function toGatewayUrl(uri: string) {
+  if (uri.startsWith("ipfs://")) {
+    return `https://ipfs.io/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
+  }
+
+  return uri;
+}
+
+function isLocalMockUri(uri: string) {
+  return uri.startsWith("ipfs://mock-") || uri.startsWith("ipfs://metadata-mock-");
+}
+
+export async function resolveTokenMetadata(tokenURI: string): Promise<TokenMetadata | null> {
+  if (!tokenURI) {
+    return null;
+  }
+
+  const mockMetadata = readMockMetadata()[tokenURI];
+  if (mockMetadata) {
+    return mockMetadata;
+  }
+
+  if (isLocalMockUri(tokenURI)) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(toGatewayUrl(tokenURI), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as TokenMetadata;
+  } catch {
+    return null;
+  }
+}
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -87,9 +166,15 @@ export async function uploadMetadataToIpfs(
   };
 
   if (!API_BASE_URL) {
+    const tokenURI = `ipfs://metadata-${media.cid}`;
+    writeMockMetadata(tokenURI, {
+      ...metadata,
+      imageUrl: media.gatewayUrl,
+    });
+
     return {
       metadataCid: `metadata-${media.cid}`,
-      tokenURI: `ipfs://metadata-${media.cid}`,
+      tokenURI,
       gatewayUrl: media.gatewayUrl,
     };
   }

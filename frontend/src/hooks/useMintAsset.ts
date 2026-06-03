@@ -4,6 +4,8 @@ import {
   uploadMediaToIpfs,
   uploadMetadataToIpfs,
 } from "@/services/ipfs-api";
+import { useNFT } from "@/hooks/useNFT";
+import { useWalletStore } from "@/store/wallet";
 import type { MintAssetForm, MintStep } from "@/types/mint";
 
 const DEFAULT_FORM: MintAssetForm = {
@@ -20,6 +22,8 @@ export function useMintAsset() {
   const [error, setError] = useState<string | null>(null);
   const [tokenURI, setTokenURI] = useState("");
   const [mediaCid, setMediaCid] = useState("");
+  const walletAddress = useWalletStore((state) => state.address);
+  const { mintAsset } = useNFT();
 
   const progress = useMemo(() => {
     if (step === "uploading-media") return 35;
@@ -76,8 +80,12 @@ export function useMintAsset() {
        * 后续应接入 services/web3/assetContract.ts 中的 mintAsset(params)，
        * 并通过 MetaMask 完成签名。
        */
+      if (!walletAddress) {
+        throw new Error("请先连接钱包后再铸造资产。");
+      }
+
       setStep("waiting-signature");
-      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      await mintAsset(walletAddress, metadata.tokenURI, form.royaltyBps);
       setStep("confirmed");
     } catch (err) {
       setStep("failed");

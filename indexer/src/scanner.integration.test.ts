@@ -72,7 +72,7 @@ describe('Scanner integration', () => {
     const watched: WatchedContract[] = [
       {
         contract: new Contract(NFT_ADDRESS, loadABI('DigitalAssetNFT'), provider),
-        events: ['AssetMinted'],
+        events: ['AssetMinted', 'Transfer'],
       },
       {
         contract: new Contract(FIXED_PRICE_ADDRESS, loadABI('FixedPriceMarket'), provider),

@@ -34,6 +34,7 @@ export function useWallet() {
     hasMetaMask: wallet.hasMetaMask,
     error: wallet.error,
     connect: wallet.connect,
+    switchToLocalNetwork: wallet.switchToLocalNetwork,
     disconnect: wallet.disconnect,
     metamaskDownloadUrl: METAMASK_DOWNLOAD_URL,
   };

@@ -1,183 +1,228 @@
-import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-import { useWallet } from '@/hooks/useWallet';
-import { useUserStore } from '@/store/user-store';
+import { useNetworkCheck } from "@/hooks/useNetworkCheck";
+import { useWallet } from "@/hooks/useWallet";
+import { useUserStore } from "@/store/user-store";
 
-import { Button } from './ui/button';
+import { Button } from "./ui/button";
 import {
-	Popover,
-	PopoverContent,
-	PopoverDescription,
-	PopoverHeader,
-	PopoverTitle,
-	PopoverTrigger,
-} from './ui/popover';
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "./ui/popover";
 
 function shorten(address: string) {
-	return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
+  return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
 }
 
 function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
-	if (cid) {
-		const src = `https://ipfs.io/ipfs/${cid}`;
-		return (
-			<img
-				src={src}
-				alt="用户头像"
-				width={size}
-				height={size}
-				className="rounded-full object-cover"
-			/>
-		);
-	}
+  if (cid) {
+    const src = `https://ipfs.io/ipfs/${cid}`;
+    return (
+      <img
+        src={src}
+        alt="用户头像"
+        width={size}
+        height={size}
+        className="rounded-full object-cover"
+      />
+    );
+  }
 
-	return (
-		<div
-			className="flex items-center justify-center rounded-full bg-slate-200 text-slate-600"
-			style={{ width: size, height: size }}
-			aria-hidden
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width={size * 0.6}
-				height={size * 0.6}
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="1.5"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			>
-				<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-				<circle cx="12" cy="7" r="4" />
-			</svg>
-		</div>
-	);
+  return (
+    <div
+      className="flex items-center justify-center rounded-full bg-slate-200 text-slate-600"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size * 0.6}
+        height={size * 0.6}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    </div>
+  );
 }
 
 export default function HeadBar() {
-	const user = useUserStore((state) => state.user);
-	const clearUser = useUserStore((state) => state.clearUser);
-	const wallet = useWallet();
-	const navigate = useNavigate();
+  const user = useUserStore((state) => state.user);
+  const clearUser = useUserStore((state) => state.clearUser);
+  const wallet = useWallet();
+  const networkCheck = useNetworkCheck();
+  const navigate = useNavigate();
 
-	const [open, setOpen] = useState(false);
-	const timeoutRef = useRef<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
 
-	const handleMouseEnter = () => {
-		if (!user) return;
-		if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-		setOpen(true);
-	};
+  const handleMouseEnter = () => {
+    if (!user) return;
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setOpen(true);
+  };
 
-	const handleMouseLeave = () => {
-		if (!user) return;
-		timeoutRef.current = window.setTimeout(() => setOpen(false), 150);
-	};
+  const handleMouseLeave = () => {
+    if (!user) return;
+    timeoutRef.current = window.setTimeout(() => setOpen(false), 150);
+  };
 
-	const walletButtonText = wallet.isConnecting
-		? '连接中...'
-		: wallet.isSigning
-			? '等待签名...'
-			: wallet.address && !wallet.signature
-				? '重新签名'
-				: '连接钱包';
+  const walletButtonText = wallet.isConnecting
+    ? "连接中..."
+    : wallet.isSigning
+      ? "等待签名..."
+      : wallet.address && !wallet.signature
+        ? "重新签名"
+        : "连接钱包";
 
-	return (
-		<header className="w-full border-b border-slate-100 bg-white">
-			<div className="mx-auto flex w-full max-w-[76rem] items-center justify-between px-4 py-3">
-				<div className="flex items-center gap-4">
-					<Link to="/" className="flex items-center gap-2 text-lg font-semibold text-indigo-600">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M4 6h16M4 12h10M4 18h16" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-						</svg>
-						<span>AssetChain</span>
-					</Link>
-				</div>
+  return (
+    <header className="w-full border-b border-slate-100 bg-white">
+      <div className="mx-auto flex w-full max-w-[76rem] items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-indigo-600">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 6h16M4 12h10M4 18h16" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>AssetChain</span>
+          </Link>
+        </div>
 
-				<nav className="hidden gap-6 text-sm text-slate-600 md:flex">
-					<Link to="/">首页</Link>
-					<Link to="/market">交易市场</Link>
-					<Link to="/assert">资产铸造</Link>
-					<Link to="/profile">个人中心</Link>
-				</nav>
+        <nav className="hidden gap-6 text-sm text-slate-600 md:flex">
+          <Link to="/">首页</Link>
+          <Link to="/market">交易市场</Link>
+          <Link to="/assert">资产铸造</Link>
+          <Link to="/profile">个人中心</Link>
+        </nav>
 
-				<div className="flex items-center gap-3">
-					<div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-						{user ? (
-							<Popover open={open} onOpenChange={setOpen}>
-								<PopoverTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										aria-label="用户菜单"
-										className="h-10 w-10 rounded-full p-0"
-									>
-										<Avatar cid={user.profile?.avatarCid} size={40} />
-									</Button>
-								</PopoverTrigger>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={networkCheck.isChecking}
+            title="检测当前网络和合约部署状态"
+            onClick={() => {
+              void networkCheck.checkNetwork();
+            }}
+          >
+            {networkCheck.isChecking ? "检测中..." : "检测网络"}
+          </Button>
 
-								<PopoverContent sideOffset={8} align="end" className="w-72">
-									<PopoverHeader>
-										<div className="flex items-center gap-3">
-											<Avatar cid={user.profile?.avatarCid} size={48} />
-											<div className="flex flex-col">
-												<PopoverTitle>{user.profile?.displayName ?? shorten(user.address)}</PopoverTitle>
-												<PopoverDescription className="text-xs">{shorten(user.address)}</PopoverDescription>
-											</div>
-										</div>
-									</PopoverHeader>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={wallet.isConnecting || wallet.isSigning}
+            title="切换到 Hardhat Localhost（Chain ID 31337）"
+            onClick={() => {
+              void wallet.switchToLocalNetwork();
+            }}
+          >
+            切换本地链
+          </Button>
 
-									<div className="mt-2 flex flex-col gap-3">
-										<div className="text-sm text-slate-700">角色：{user.role}</div>
-										<div className="text-sm text-slate-500">当前链 ID：{user.lastSeenChainId ?? '未知'}</div>
-										<Button
-											variant="destructive"
-											size="sm"
-											className="w-fit"
-											onClick={() => {
-												clearUser();
-												wallet.disconnect();
-												navigate('/');
-											}}
-										>
-											登出
-										</Button>
-									</div>
-								</PopoverContent>
-							</Popover>
-						) : (
-							<div className="flex items-center gap-3">
-								<Button
-									type="button"
-									disabled={wallet.isConnecting || wallet.isSigning}
-									aria-label="连接 MetaMask 钱包"
-									title={wallet.error ?? undefined}
-									className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 text-white shadow-md hover:from-violet-700 hover:to-blue-700"
-									onClick={() => {
-										void wallet.connect();
-									}}
-								>
-									{walletButtonText}
-								</Button>
+          <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            {user ? (
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="用户菜单"
+                    className="h-10 w-10 rounded-full p-0"
+                  >
+                    <Avatar cid={user.profile?.avatarCid} size={40} />
+                  </Button>
+                </PopoverTrigger>
 
-								{wallet.error ? (
-									<a
-										href={wallet.metamaskDownloadUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="hidden max-w-40 truncate text-xs text-red-500 lg:block"
-										title={wallet.error}
-									>
-										{wallet.error}
-									</a>
-								) : null}
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
-		</header>
-	);
+                <PopoverContent sideOffset={8} align="end" className="w-72">
+                  <PopoverHeader>
+                    <div className="flex items-center gap-3">
+                      <Avatar cid={user.profile?.avatarCid} size={48} />
+                      <div className="flex flex-col">
+                        <PopoverTitle>{user.profile?.displayName ?? shorten(user.address)}</PopoverTitle>
+                        <PopoverDescription className="text-xs">{shorten(user.address)}</PopoverDescription>
+                      </div>
+                    </div>
+                  </PopoverHeader>
+
+                  <div className="mt-2 flex flex-col gap-3">
+                    <div className="text-sm text-slate-700">角色：{user.role}</div>
+                    <div className="text-sm text-slate-500">当前链 ID：{user.lastSeenChainId ?? "未知"}</div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => {
+                        clearUser();
+                        wallet.disconnect();
+                        navigate("/");
+                      }}
+                    >
+                      登出
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  disabled={wallet.isConnecting || wallet.isSigning}
+                  aria-label="连接 MetaMask 钱包"
+                  title={wallet.error ?? undefined}
+                  className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 text-white shadow-md hover:from-violet-700 hover:to-blue-700"
+                  onClick={() => {
+                    void wallet.connect();
+                  }}
+                >
+                  {walletButtonText}
+                </Button>
+
+                {wallet.error ? (
+                  <a
+                    href={wallet.metamaskDownloadUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hidden max-w-40 truncate text-xs text-red-500 lg:block"
+                    title={wallet.error}
+                  >
+                    {wallet.error}
+                  </a>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {networkCheck.result ? (
+        <div
+          className={
+            networkCheck.result.ok
+              ? "border-t border-emerald-100 bg-emerald-50 px-4 py-2 text-center text-sm font-medium text-emerald-700"
+              : "border-t border-red-100 bg-red-50 px-4 py-2 text-center text-sm font-medium text-red-700"
+          }
+        >
+          {networkCheck.result.message}
+          {networkCheck.result.chainIdHex ? (
+            <span className="ml-2 font-mono text-xs">
+              {networkCheck.result.chainIdHex}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </header>
+  );
 }
