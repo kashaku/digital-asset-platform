@@ -1,18 +1,21 @@
-import { CopyIcon, UserRoundIcon, WalletIcon } from "lucide-react";
+import { CheckCircle2Icon, CopyIcon, UserRoundIcon, WalletIcon } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import type { ProfileStats } from "@/types/profile";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { ProfileStats } from '@/types/profile';
 
 type ProfileSummaryCardProps = {
   address?: string | null;
+  chainId?: number | null;
   displayName?: string;
+  isVerified?: boolean;
+  signedAt?: string | null;
   stats: ProfileStats;
 };
 
 function shortenAddress(address?: string | null) {
   if (!address) {
-    return "未连接钱包";
+    return '未连接钱包';
   }
 
   return `${address.slice(0, 7)}...${address.slice(-4)}`;
@@ -20,7 +23,10 @@ function shortenAddress(address?: string | null) {
 
 export function ProfileSummaryCard({
   address,
-  displayName = "未命名用户",
+  chainId,
+  displayName = '钱包用户',
+  isVerified = false,
+  signedAt,
   stats,
 }: ProfileSummaryCardProps) {
   return (
@@ -33,9 +39,18 @@ export function ProfileSummaryCard({
         </div>
 
         <div className="text-center md:text-left">
-          <h1 className="text-2xl font-extrabold text-slate-950">
-            {displayName}
-          </h1>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <h1 className="text-2xl font-extrabold text-slate-950">
+              {displayName}
+            </h1>
+
+            {isVerified ? (
+              <span className="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                <CheckCircle2Icon className="size-3.5" />
+                已签名登录
+              </span>
+            ) : null}
+          </div>
 
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5">
             <span className="font-mono text-sm text-slate-600">
@@ -47,10 +62,19 @@ export function ProfileSummaryCard({
               size="icon-xs"
               type="button"
               variant="ghost"
+              disabled={!address}
+              onClick={() => {
+                if (address) void navigator.clipboard.writeText(address);
+              }}
             >
               <CopyIcon className="size-3.5" />
             </Button>
           </div>
+
+          <p className="mt-2 text-sm text-slate-500">
+            当前链 ID：{chainId ?? '未知'}
+            {signedAt ? ` · 签名时间：${new Date(signedAt).toLocaleString()}` : ''}
+          </p>
         </div>
 
         <div className="grid w-full gap-4 text-center sm:grid-cols-2 md:ml-auto md:w-auto">
