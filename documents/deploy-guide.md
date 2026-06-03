@@ -18,6 +18,28 @@ npm run compile
 
 ---
 
+## 本地开发流程
+
+Hardhat 本地节点是临时链，重启后链上状态会清空。因此每次重新启动本地节点后，都需要重新部署并同步配置。
+
+终端 A：
+
+```bash
+npm run node
+```
+
+终端 B：
+
+```bash
+cd contracts
+npx hardhat run scripts/deploy.ts --network localhost
+npx hardhat run scripts/sync.ts --network localhost
+```
+
+然后再启动 indexer / frontend。
+
+---
+
 ## 部署 + 同步
 
 ```bash
