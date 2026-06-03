@@ -1,37 +1,40 @@
 import { useEffect } from 'react';
-import { useWalletStore } from '../store/wallet';
+
+import { METAMASK_DOWNLOAD_URL, useWalletStore } from '../store/wallet';
 
 export function useWallet() {
   const wallet = useWalletStore();
 
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      // 监听小狐狸账号切换事件
-      window.ethereum.on('accountsChanged', wallet.syncAccount);
-      // 监听小狐狸网络切换事件
-      window.ethereum.on('chainChanged', wallet.syncChain);
-      // 监听小狐狸断开连接事件
-      window.ethereum.on('disconnect', wallet.disconnect);
+    const ethereum = window.ethereum;
+    if (!ethereum) return;
 
-      return () => {
-        if (window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', wallet.syncAccount);
-          window.ethereum.removeListener('chainChanged', wallet.syncChain);
-          window.ethereum.removeListener('disconnect', wallet.disconnect);
-        }
-      };
-    }
-  }, [wallet.syncAccount, wallet.syncChain, wallet.disconnect]);
+    ethereum.on('accountsChanged', wallet.syncAccount);
+    ethereum.on('chainChanged', wallet.syncChain);
+    ethereum.on('disconnect', wallet.disconnect);
 
-  // 抛出所需的对象，供组件按需使用。
+    return () => {
+      ethereum.removeListener?.('accountsChanged', wallet.syncAccount);
+      ethereum.removeListener?.('chainChanged', wallet.syncChain);
+      ethereum.removeListener?.('disconnect', wallet.disconnect);
+    };
+  }, [wallet.disconnect, wallet.syncAccount, wallet.syncChain]);
+
   return {
     address: wallet.address,
     chainId: wallet.chainId,
+    provider: wallet.provider,
+    signer: wallet.signer,
+    signature: wallet.signature,
+    signedMessage: wallet.signedMessage,
+    nonce: wallet.nonce,
+    signedAt: wallet.signedAt,
     isConnecting: wallet.isConnecting,
+    isSigning: wallet.isSigning,
+    hasMetaMask: wallet.hasMetaMask,
     error: wallet.error,
     connect: wallet.connect,
     disconnect: wallet.disconnect,
-    provider: wallet.provider,
-    signer: wallet.signer,
+    metamaskDownloadUrl: METAMASK_DOWNLOAD_URL,
   };
 }
