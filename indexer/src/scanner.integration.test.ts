@@ -41,6 +41,13 @@ describe('Scanner integration', () => {
       return;
     }
 
+    const nftCode = await provider.getCode(NFT_ADDRESS);
+    const marketCode = await provider.getCode(FIXED_PRICE_ADDRESS);
+    if (nftCode === '0x' || marketCode === '0x') {
+      console.warn('  [skip] 当前 RPC 上找不到已配置的合约，请先重新 deploy/sync');
+      return;
+    }
+
     const signer = await provider.getSigner();
     const nft = new Contract(NFT_ADDRESS, loadABI('DigitalAssetNFT'), signer);
     const market = new Contract(FIXED_PRICE_ADDRESS, loadABI('FixedPriceMarket'), signer);
@@ -98,6 +105,6 @@ describe('Scanner integration', () => {
     const match = res.body.items.find(
       (l: { tokenURI: string }) => l.tokenURI === 'ipfs://integration-test',
     );
-    expect(match).toBeDefined();
+      expect(match, `Expected listing not found, found listings: ${JSON.stringify(res.body.items)}`).toBeDefined();
   });
 });
