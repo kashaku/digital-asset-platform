@@ -1,10 +1,18 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { useWallet } from '@/hooks/useWallet';
 import { useUserStore } from '@/store/user-store';
 
 import { Button } from './ui/button';
-import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
+import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from './ui/popover';
 
 function shorten(address: string) {
 	return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
@@ -12,13 +20,11 @@ function shorten(address: string) {
 
 function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
 	if (cid) {
-		// 使用 IPFS 网关占位渲染; 实际项目中应使用配置的网关解析
 		const src = `https://ipfs.io/ipfs/${cid}`;
 		return (
-			// eslint-disable-next-line jsx-a11y/img-redundant-alt
 			<img
 				src={src}
-				alt="avatar"
+				alt="用户头像"
 				width={size}
 				height={size}
 				className="rounded-full object-cover"
@@ -32,7 +38,17 @@ function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
 			style={{ width: size, height: size }}
 			aria-hidden
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width={size * 0.6}
+				height={size * 0.6}
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
 				<circle cx="12" cy="7" r="4" />
 			</svg>
@@ -43,6 +59,7 @@ function Avatar({ cid, size = 36 }: { cid?: string; size?: number }) {
 export default function HeadBar() {
 	const user = useUserStore((s) => s.user);
 	const logout = useUserStore((s) => s.logout);
+	const wallet = useWallet();
 	const navigate = useNavigate();
 
 	const [open, setOpen] = useState(false);
@@ -56,21 +73,30 @@ export default function HeadBar() {
 
 	const handleMouseLeave = () => {
 		if (!user) return;
-		// 延迟关闭，提升可用性
 		timeoutRef.current = window.setTimeout(() => setOpen(false), 150);
 	};
+
+	const walletButtonText = wallet.isConnecting
+		? '连接中...'
+		: wallet.isSigning
+			? '等待签名...'
+			: wallet.address
+				? shorten(wallet.address)
+				: '连接钱包';
 
 	return (
 		<header className="w-full border-b border-slate-100 bg-white">
 			<div className="mx-auto flex w-full max-w-[76rem] items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-4">
 					<Link to="/" className="flex items-center gap-2 text-lg font-semibold text-indigo-600">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h10M4 18h16" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M4 6h16M4 12h10M4 18h16" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+						</svg>
 						<span>AssetChain</span>
 					</Link>
 				</div>
 
-				<nav className="hidden md:flex gap-6 text-sm text-slate-600">
+				<nav className="hidden gap-6 text-sm text-slate-600 md:flex">
 					<Link to="/">首页</Link>
 					<Link to="/market">交易市场</Link>
 					<Link to="/assert">资产铸造</Link>
@@ -112,6 +138,7 @@ export default function HeadBar() {
 											className="w-fit"
 											onClick={() => {
 												logout();
+												wallet.disconnect();
 												navigate('/');
 											}}
 										>
@@ -121,15 +148,37 @@ export default function HeadBar() {
 								</PopoverContent>
 							</Popover>
 						) : (
-							<Button
-								variant="ghost"
-								size="icon"
-								aria-label="登录"
-								className="h-10 w-10 rounded-full p-0"
-								onClick={() => navigate('/profile')}
-							>
-								<Avatar size={40} />
-							</Button>
+							<div className="flex items-center gap-3">
+								<Button
+									type="button"
+									disabled={wallet.isConnecting || wallet.isSigning}
+									aria-label="连接 MetaMask 钱包"
+									title={wallet.error ?? undefined}
+									className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 text-white shadow-md hover:from-violet-700 hover:to-blue-700"
+									onClick={() => {
+										if (wallet.address) {
+											navigate('/profile');
+											return;
+										}
+
+										void wallet.connect();
+									}}
+								>
+									{walletButtonText}
+								</Button>
+
+								{wallet.error ? (
+									<a
+										href={wallet.metamaskDownloadUrl}
+										target="_blank"
+										rel="noreferrer"
+										className="hidden max-w-40 truncate text-xs text-red-500 lg:block"
+										title={wallet.error}
+									>
+										{wallet.error}
+									</a>
+								) : null}
+							</div>
 						)}
 					</div>
 				</div>
