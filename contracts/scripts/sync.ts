@@ -1,4 +1,3 @@
-import { network } from "hardhat";
 import {
   loadDeployment,
   syncABIs,
@@ -7,7 +6,7 @@ import {
 } from "./export.js";
 
 async function main() {
-  const { networkName } = await network.connect();
+  const networkName = process.argv[2] || process.env.HARDHAT_NETWORK || "localhost";
   console.log(`network: ${networkName}`);
 
   const addresses = loadDeployment(networkName);

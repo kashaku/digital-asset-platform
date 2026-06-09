@@ -35,6 +35,9 @@ async function main() {
   }
 
   saveDeployment(networkName, addresses);
+  syncABIs(addresses);
+  await writeFrontendConfig(addresses, networkName);
+  await writeIndexerEnv(addresses, networkName);
 }
 
 main().catch((error) => {
