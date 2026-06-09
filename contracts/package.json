@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "deploy-dev": "hardhat run scripts/deploy.ts --network localhost"
+    "deploy-dev": "hardhat run scripts/deploy.ts --network localhost",
+    "sync-dev": "tsx scripts/sync.ts localhost"
   },
   "keywords": [],
   "author": "",
