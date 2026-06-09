@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { FIXED_PRICE_ADDRESS, NFT_ADDRESS } from "@/config/contract";
+import { FIXED_PRICE_ADDRESS, NFT_ADDRESS, OFFER_ADDRESS } from "@/config/contract";
 import { LOCAL_CHAIN_ID, LOCAL_CHAIN_ID_HEX } from "@/store/wallet";
 
 type NetworkCheckReason =
@@ -9,6 +9,7 @@ type NetworkCheckReason =
   | "WRONG_CHAIN"
   | "NFT_CONTRACT_MISSING"
   | "MARKET_CONTRACT_MISSING"
+  | "OFFER_MARKET_CONTRACT_MISSING"
   | "RPC_ERROR";
 
 export type NetworkCheckResult = {
@@ -20,6 +21,7 @@ export type NetworkCheckResult = {
   contracts?: {
     nft: boolean;
     market: boolean;
+    offerMarket: boolean;
   };
 };
 
@@ -67,7 +69,7 @@ export function useNetworkCheck() {
         return next;
       }
 
-      const [nftCode, marketCode] = await Promise.all([
+      const [nftCode, marketCode, offerMarketCode] = await Promise.all([
         ethereum.request({
           method: "eth_getCode",
           params: [NFT_ADDRESS, "latest"],
@@ -76,10 +78,15 @@ export function useNetworkCheck() {
           method: "eth_getCode",
           params: [FIXED_PRICE_ADDRESS, "latest"],
         }),
+        ethereum.request({
+          method: "eth_getCode",
+          params: [OFFER_ADDRESS, "latest"],
+        }),
       ]);
 
       const hasNftContract = hasContractCode(nftCode);
       const hasMarketContract = hasContractCode(marketCode);
+      const hasOfferMarketContract = hasContractCode(offerMarketCode);
 
       if (!hasNftContract) {
         const next: NetworkCheckResult = {
@@ -91,6 +98,7 @@ export function useNetworkCheck() {
           contracts: {
             nft: false,
             market: hasMarketContract,
+            offerMarket: hasOfferMarketContract,
           },
         };
         setResult(next);
@@ -101,12 +109,30 @@ export function useNetworkCheck() {
         const next: NetworkCheckResult = {
           ok: false,
           reason: "MARKET_CONTRACT_MISSING",
-          message: "当前网络未部署市场合约，请重新 deploy/sync",
+          message: "当前网络未部署一口价市场合约，请重新 deploy/sync",
           chainId: LOCAL_CHAIN_ID,
           chainIdHex,
           contracts: {
             nft: true,
             market: false,
+            offerMarket: hasOfferMarketContract,
+          },
+        };
+        setResult(next);
+        return next;
+      }
+
+      if (!hasOfferMarketContract) {
+        const next: NetworkCheckResult = {
+          ok: false,
+          reason: "OFFER_MARKET_CONTRACT_MISSING",
+          message: "当前网络未部署出价市场合约，请重新 deploy/sync",
+          chainId: LOCAL_CHAIN_ID,
+          chainIdHex,
+          contracts: {
+            nft: true,
+            market: true,
+            offerMarket: false,
           },
         };
         setResult(next);
@@ -122,6 +148,7 @@ export function useNetworkCheck() {
         contracts: {
           nft: true,
           market: true,
+          offerMarket: true,
         },
       };
       setResult(next);

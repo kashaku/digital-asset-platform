@@ -2,7 +2,7 @@ export type MintAssetForm = {
   file: File | null;
   name: string;
   description: string;
-  category: "image" | "art" | "photo" | "music" | "document" | "collectible";
+  category: "art" | "photo" | "music" | "document" | "collectible";
   royaltyBps: number;
 };
 
