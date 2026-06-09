@@ -11,6 +11,7 @@ const offerMarketAddress = OFFER_ADDRESS as string;
 const OFFER_MARKET_ABI = [
   "function makeOffer(uint256 tokenId,uint256 price,uint256 expiresAt) payable",
   "function acceptOffer(uint256 tokenId,address buyer)",
+  "function rejectOffer(uint256 tokenId,address buyer)",
   "function cancelOffer(uint256 tokenId)",
   "function cancelStaleOffers(uint256 tokenId)",
 ] as const;
@@ -86,6 +87,20 @@ export function useOfferMarket() {
     [offerContract],
   );
 
+  const rejectOffer = useCallback(
+    async (tokenId: number, buyer: string) => {
+      assertOfferMarketAddress();
+
+      if (!offerContract) {
+        throw new Error("请先连接钱包");
+      }
+
+      const tx = await offerContract.rejectOffer(tokenId, buyer);
+      return await tx.wait();
+    },
+    [offerContract],
+  );
+
   const cancelStaleOffers = useCallback(
     async (tokenId: number) => {
       assertOfferMarketAddress();
@@ -104,6 +119,7 @@ export function useOfferMarket() {
     offerContract,
     makeOffer,
     acceptOffer,
+    rejectOffer,
     cancelOffer,
     cancelStaleOffers,
   };

@@ -48,7 +48,7 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [isListing, setIsListing] = useState(false);
   const [isLoadingOffers, setIsLoadingOffers] = useState(false);
-  const [activeBuyer, setActiveBuyer] = useState<string | null>(null);
+  const [activeOffer, setActiveOffer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isOwner =
@@ -76,6 +76,14 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
     }
   };
 
+  const removeOffer = (buyer: string) => {
+    setOffers((currentOffers) =>
+      currentOffers.filter(
+        (offer) => offer.buyer.toLowerCase() !== buyer.toLowerCase(),
+      ),
+    );
+  };
+
   const handleListForSale = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -100,7 +108,7 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
   };
 
   const handleAcceptOffer = async (buyer: string) => {
-    setActiveBuyer(buyer);
+    setActiveOffer(`accept:${buyer}`);
     setError(null);
 
     try {
@@ -115,15 +123,29 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
       }
 
       await offerMarket.acceptOffer(Number(asset.tokenId), buyer);
-      setOffers((currentOffers) =>
-        currentOffers.filter(
-          (offer) => offer.buyer.toLowerCase() !== buyer.toLowerCase(),
-        ),
-      );
+      removeOffer(buyer);
     } catch (err) {
       setError(err instanceof Error ? err.message : "接受出价失败");
     } finally {
-      setActiveBuyer(null);
+      setActiveOffer(null);
+    }
+  };
+
+  const handleRejectOffer = async (buyer: string) => {
+    setActiveOffer(`reject:${buyer}`);
+    setError(null);
+
+    try {
+      if (!isOwner) {
+        throw new Error("只有当前 NFT 持有者可以回绝出价。");
+      }
+
+      await offerMarket.rejectOffer(Number(asset.tokenId), buyer);
+      removeOffer(buyer);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "回绝出价失败");
+    } finally {
+      setActiveOffer(null);
     }
   };
 
@@ -181,7 +203,7 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
               <DialogHeader>
                 <DialogTitle>管理资产</DialogTitle>
                 <DialogDescription>
-                  设置 Token #{asset.tokenId} 的一口价，或接受买家提交的链上出价。接受后会立即成交并完成资产转移。
+                  设置 Token #{asset.tokenId} 的一口价，或处理买家提交的链上出价。
                 </DialogDescription>
               </DialogHeader>
 
@@ -222,33 +244,53 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
                     <p className="text-sm text-slate-500">当前暂无出价。</p>
                   ) : (
                     <div className="space-y-2">
-                      {offers.map((offer) => (
-                        <div
-                          className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"
-                          key={`${asset.tokenId}-${offer.buyer}`}
-                        >
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-900">
-                              {formatOfferPrice(offer.price)}
-                            </p>
-                            <p className="truncate font-mono text-xs text-slate-500">
-                              {shortenAddress(offer.buyer)}
-                            </p>
-                          </div>
+                      {offers.map((offer) => {
+                        const acceptKey = `accept:${offer.buyer}`;
+                        const rejectKey = `reject:${offer.buyer}`;
 
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={!isOwner || activeBuyer === offer.buyer}
-                            onClick={() => void handleAcceptOffer(offer.buyer)}
+                        return (
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"
+                            key={`${asset.tokenId}-${offer.buyer}`}
                           >
-                            {activeBuyer === offer.buyer ? (
-                              <Loader2Icon className="size-4 animate-spin" />
-                            ) : null}
-                            接受
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">
+                                {formatOfferPrice(offer.price)}
+                              </p>
+                              <p className="truncate font-mono text-xs text-slate-500">
+                                {shortenAddress(offer.buyer)}
+                              </p>
+                            </div>
+
+                            <div className="flex shrink-0 gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={!isOwner || activeOffer !== null}
+                                onClick={() => void handleAcceptOffer(offer.buyer)}
+                              >
+                                {activeOffer === acceptKey ? (
+                                  <Loader2Icon className="size-4 animate-spin" />
+                                ) : null}
+                                接受
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={!isOwner || activeOffer !== null}
+                                onClick={() => void handleRejectOffer(offer.buyer)}
+                              >
+                                {activeOffer === rejectKey ? (
+                                  <Loader2Icon className="size-4 animate-spin" />
+                                ) : null}
+                                回绝
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

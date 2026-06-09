@@ -25,6 +25,7 @@ contract OfferMarket {
 
     event OfferMade(uint256 indexed tokenId, address indexed buyer, uint256 price, uint256 expiresAt);
     event OfferAccepted(uint256 indexed tokenId, address indexed buyer, uint256 price, address indexed seller);
+    event OfferRejected(uint256 indexed tokenId, address indexed buyer, uint256 price, address indexed seller);
     event OfferCancelled(uint256 indexed tokenId, address indexed buyer);
 
     constructor(address danftAddress) {
@@ -102,6 +103,22 @@ contract OfferMarket {
         require(refunded, "Offer refund failed");
 
         emit OfferCancelled(tokenId, msg.sender);
+    }
+
+    function rejectOffer(uint256 tokenId, address buyer) external {
+        Offer storage offer = offers[tokenId][buyer];
+        require(offer.price > 0, "No active offer");
+        require(nftContract.ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(offer.seller == msg.sender, "Offer seller changed");
+
+        uint256 refundAmount = offer.price;
+        _clearOffer(tokenId, buyer);
+
+        (bool refunded, ) = payable(buyer).call{value: refundAmount}("");
+        require(refunded, "Offer refund failed");
+
+        emit OfferRejected(tokenId, buyer, refundAmount, msg.sender);
+        emit OfferCancelled(tokenId, buyer);
     }
 
     function cancelStaleOffers(uint256 tokenId) external {
