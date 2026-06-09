@@ -53,7 +53,7 @@ async function main() {
   if (OFFER_ADDRESS) {
     watched.push({
       contract: new Contract(OFFER_ADDRESS, loadABI('OfferMarket'), provider),
-      events: ['OfferMade', 'OfferAccepted', 'OfferCancelled'],
+      events: ['OfferMade', 'OfferAccepted', 'OfferRejected', 'OfferCancelled'],
     });
   }
 

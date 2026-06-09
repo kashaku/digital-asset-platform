@@ -57,6 +57,10 @@ const HANDLERS: Record<string, (log: EventLog) => void> = {
     store.deleteOffer(Number(log.args[0]), log.args[1]);
   },
 
+  OfferRejected(log) {
+    store.deleteOffer(Number(log.args[0]), log.args[1]);
+  },
+
   OfferCancelled(log) {
     store.deleteOffer(Number(log.args[0]), log.args[1]);
   },
