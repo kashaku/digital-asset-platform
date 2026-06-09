@@ -24,7 +24,7 @@ const stepText: Record<MintStep, string> = {
   "uploading-media": "正在上传媒体文件到 IPFS...",
   "uploading-metadata": "正在生成并上传 metadata.json...",
   "waiting-signature": "等待接入 MetaMask 签名...",
-  confirmed: "资产数据准备完成，可继续执行链上铸造",
+  confirmed: "链上铸造已完成。若想在市场展示，请前往个人中心先上架资产。",
   failed: "流程执行失败，请检查表单或网络状态",
 };
 

@@ -61,6 +61,7 @@ export async function writeFrontendConfig(
   networkName: string,
 ) {
   const configPath = resolve("../frontend/src/config/contract.ts");
+  mkdirSync(dirname(configPath), { recursive: true });
   const addr = (name: string) =>
     addresses[name] ?? "0x0000000000000000000000000000000000000000";
 

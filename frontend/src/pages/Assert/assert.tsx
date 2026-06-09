@@ -1,5 +1,7 @@
 import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { FileUploadCard } from "@/pages/Assert/components/file-upload-card";
 import { MintBasicForm } from "@/pages/Assert/components/mint-basic-form";
 import { MintSubmitCard } from "@/pages/Assert/components/mint-submit-card";
@@ -70,8 +72,13 @@ export default function AssertPage() {
             <Alert>
               <AlertTitle>资产数据准备完成</AlertTitle>
               <AlertDescription>
-                当前已获得 Token URI。后续接入 MetaMask 后，可调用
-                mintAsset 完成链上铸造。
+                当前资产已完成链上铸造，但市场页只展示“已上架”资产。
+                请前往个人中心先设置价格并上架，然后就能在市场中看到它。
+                <div className="mt-4">
+                  <Button asChild variant="outline">
+                    <Link to="/profile">去个人中心上架</Link>
+                  </Button>
+                </div>
               </AlertDescription>
             </Alert>
           ) : null}
