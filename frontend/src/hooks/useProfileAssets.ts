@@ -56,6 +56,7 @@ async function fetchIndexedProfileData(address: string): Promise<ProfileData> {
         tokenId: String(nft.tokenId),
         title: metadata?.name || `Asset #${nft.tokenId}`,
         imageUrl: resolveImageUrl(metadata?.imageUrl ?? metadata?.image),
+        owner: nft.owner ?? nft.creator,
         isListed: Boolean(listing),
         price: listing ? weiToDisplayPrice(listing.price) : undefined,
       };

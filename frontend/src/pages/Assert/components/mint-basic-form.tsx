@@ -17,6 +17,17 @@ type MintBasicFormProps = {
   onChange: (partial: Partial<MintAssetForm>) => void;
 };
 
+const categoryOptions: Array<{
+  label: string;
+  value: MintAssetForm["category"];
+}> = [
+  { label: "数字艺术", value: "art" },
+  { label: "摄影作品", value: "photo" },
+  { label: "音乐资产", value: "music" },
+  { label: "数字藏品", value: "collectible" },
+  { label: "文档凭证", value: "document" },
+];
+
 export function MintBasicForm({ form, onChange }: MintBasicFormProps) {
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange({ name: event.target.value });
@@ -53,7 +64,7 @@ export function MintBasicForm({ form, onChange }: MintBasicFormProps) {
 
         <Textarea
           id="asset-description"
-          placeholder="详细描述您的数字资产背后的故事..."
+          placeholder="详细描述您的数字资产背景..."
           rows={4}
           value={form.description}
           onChange={handleDescriptionChange}
@@ -69,12 +80,11 @@ export function MintBasicForm({ form, onChange }: MintBasicFormProps) {
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="image">图像</SelectItem>
-            <SelectItem value="art">数字艺术</SelectItem>
-            <SelectItem value="photo">摄影</SelectItem>
-            <SelectItem value="music">音频</SelectItem>
-            <SelectItem value="document">文档</SelectItem>
-            <SelectItem value="collectible">收藏品</SelectItem>
+            {categoryOptions.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

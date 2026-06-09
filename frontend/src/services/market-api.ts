@@ -1,7 +1,9 @@
 import type { MarketAsset, MarketStats } from "@/types/market";
-import { FIXED_PRICE_ADDRESS } from "@/config/contract";
+import { BrowserProvider, Contract } from "ethers";
+import { FIXED_PRICE_ADDRESS, NFT_ADDRESS } from "@/config/contract";
+import DigitalAssetNFTABI from "@/abis/DigitalAssetNFT.json";
 import { fetchListings, type ListingItem } from "@/services/indexer";
-import { resolveTokenMetadata } from "@/services/ipfs-api";
+import { resolveTokenMetadata, type TokenMetadata } from "@/services/ipfs-api";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
@@ -244,9 +246,78 @@ function resolveImageUrl(uri?: string) {
   return uri;
 }
 
+function normalizeRoyaltyRate(value: unknown): number | null {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return null;
+  }
+
+  return Math.max(0, value);
+}
+
+function resolveMetadataRoyaltyRate(metadata: TokenMetadata | null): number | null {
+  const directRate = normalizeRoyaltyRate(metadata?.royaltyRate);
+  if (directRate !== null) {
+    return directRate;
+  }
+
+  const nestedRate = normalizeRoyaltyRate(metadata?.royalty?.rate);
+  if (nestedRate !== null) {
+    return nestedRate;
+  }
+
+  const directBps = normalizeRoyaltyRate(metadata?.royaltyBps);
+  if (directBps !== null) {
+    return directBps / 100;
+  }
+
+  const propertyBps = normalizeRoyaltyRate(metadata?.properties?.royaltyBps);
+  if (propertyBps !== null) {
+    return propertyBps / 100;
+  }
+
+  const nestedBps = normalizeRoyaltyRate(metadata?.royalty?.bps);
+  if (nestedBps !== null) {
+    return nestedBps / 100;
+  }
+
+  const attributeBps = metadata?.attributes?.find((attr) => {
+    const key = attr.trait_type?.toLowerCase();
+    return key === "royalty_bps" || key === "royaltybps";
+  })?.value;
+  const parsedAttributeBps =
+    typeof attributeBps === "number" ? attributeBps : Number(attributeBps);
+
+  if (!Number.isNaN(parsedAttributeBps)) {
+    return parsedAttributeBps / 100;
+  }
+
+  return null;
+}
+
+async function resolveOnChainRoyaltyRate(tokenId: number): Promise<number | null> {
+  const ethereum = window.ethereum;
+
+  if (!ethereum?.isMetaMask) {
+    return null;
+  }
+
+  try {
+    const provider = new BrowserProvider(ethereum);
+    const nft = new Contract(NFT_ADDRESS, DigitalAssetNFTABI.abi, provider);
+    const [, amount] = await nft.royaltyInfo(tokenId, 10000n);
+    return Number(amount) / 100;
+  } catch {
+    return null;
+  }
+}
+
 async function listingToMarketAsset(item: ListingItem): Promise<MarketAsset> {
   const metadata = await resolveTokenMetadata(item.tokenURI);
   const imageUrl = resolveImageUrl(metadata?.imageUrl ?? metadata?.image);
+  const royaltyRate =
+    resolveMetadataRoyaltyRate(metadata) ??
+    (await resolveOnChainRoyaltyRate(item.tokenId)) ??
+    0;
   const category =
     metadata?.attributes
       ?.find((attr) => attr.trait_type?.toLowerCase() === "category")
@@ -264,14 +335,14 @@ async function listingToMarketAsset(item: ListingItem): Promise<MarketAsset> {
       owner: item.seller,
       creator: item.creator,
       price: item.price,
-      category,
+      category: String(category),
     }),
     imageUrl,
     creator: item.creator,
     owner: item.seller,
     price: weiToMatic(item.price),
     currency: "ETH",
-    royaltyRate: 0,
+    royaltyRate,
     chain: "Polygon",
     contractAddress: FIXED_PRICE_ADDRESS,
     ipfsCid: metadata?.properties?.cid ?? item.tokenURI.replace(/^ipfs:\/\//, ""),

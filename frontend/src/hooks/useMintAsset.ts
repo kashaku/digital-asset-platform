@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 
+import { useNFT } from "@/hooks/useNFT";
 import {
   uploadMediaToIpfs,
   uploadMetadataToIpfs,
 } from "@/services/ipfs-api";
-import { useNFT } from "@/hooks/useNFT";
 import { useWalletStore } from "@/store/wallet";
 import type { MintAssetForm, MintStep } from "@/types/mint";
 
@@ -12,7 +12,7 @@ const DEFAULT_FORM: MintAssetForm = {
   file: null,
   name: "",
   description: "",
-  category: "image",
+  category: "art",
   royaltyBps: 500,
 };
 
@@ -75,11 +75,6 @@ export function useMintAsset() {
       const metadata = await uploadMetadataToIpfs(form, media);
       setTokenURI(metadata.tokenURI);
 
-      /**
-       * 接口文档要求铸造 NFT 是链上写操作。
-       * 后续应接入 services/web3/assetContract.ts 中的 mintAsset(params)，
-       * 并通过 MetaMask 完成签名。
-       */
       if (!walletAddress) {
         throw new Error("请先连接钱包后再铸造资产。");
       }

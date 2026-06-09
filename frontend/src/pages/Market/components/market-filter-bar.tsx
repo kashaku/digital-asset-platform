@@ -1,16 +1,16 @@
-import { SearchIcon, SlidersHorizontalIcon } from 'lucide-react';
+import { SearchIcon, SlidersHorizontalIcon } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { MarketAssetCategory, MarketSort } from '@/types/market';
+} from "@/components/ui/select";
+import type { MarketAssetCategory, MarketSort } from "@/types/market";
 
 interface MarketFilterBarProps {
   keyword: string;
@@ -23,19 +23,19 @@ interface MarketFilterBarProps {
 }
 
 const categoryOptions: Array<{ label: string; value: MarketAssetCategory }> = [
-  { label: '全部分类', value: 'all' },
-  { label: '数字艺术', value: 'art' },
-  { label: '摄影作品', value: 'photo' },
-  { label: '音乐资产', value: 'music' },
-  { label: '数字藏品', value: 'collectible' },
-  { label: '文档凭证', value: 'document' },
+  { label: "全部分类", value: "all" },
+  { label: "数字艺术", value: "art" },
+  { label: "摄影作品", value: "photo" },
+  { label: "音乐资产", value: "music" },
+  { label: "数字藏品", value: "collectible" },
+  { label: "文档凭证", value: "document" },
 ];
 
 const sortOptions: Array<{ label: string; value: MarketSort }> = [
-  { label: '最新上架', value: 'latest' },
-  { label: '价格从低到高', value: 'price-asc' },
-  { label: '价格从高到低', value: 'price-desc' },
-  { label: '版税比例优先', value: 'royalty-desc' },
+  { label: "最新上架", value: "latest" },
+  { label: "价格从低到高", value: "price-asc" },
+  { label: "价格从高到低", value: "price-desc" },
+  { label: "版税比例优先", value: "royalty-desc" },
 ];
 
 export function MarketFilterBar({
@@ -60,7 +60,10 @@ export function MarketFilterBar({
           />
         </div>
 
-        <Select value={category} onValueChange={(value) => onCategoryChange(value as MarketAssetCategory)}>
+        <Select
+          value={category}
+          onValueChange={(value) => onCategoryChange(value as MarketAssetCategory)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="选择分类" />
           </SelectTrigger>
@@ -73,7 +76,10 @@ export function MarketFilterBar({
           </SelectContent>
         </Select>
 
-        <Select value={sort} onValueChange={(value) => onSortChange(value as MarketSort)}>
+        <Select
+          value={sort}
+          onValueChange={(value) => onSortChange(value as MarketSort)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="排序方式" />
           </SelectTrigger>

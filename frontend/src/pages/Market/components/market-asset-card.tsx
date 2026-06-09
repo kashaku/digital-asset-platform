@@ -1,13 +1,20 @@
-import { ExternalLinkIcon, MoreHorizontalIcon, ShieldCheckIcon, ShoppingCartIcon, TagIcon } from 'lucide-react';
+import { useState } from "react";
+import {
+  ExternalLinkIcon,
+  MoreHorizontalIcon,
+  ShieldCheckIcon,
+  ShoppingCartIcon,
+  TagIcon,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -17,15 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import type { MarketAsset } from '@/types/market';
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import type { MarketAsset } from "@/types/market";
 
 interface MarketAssetCardProps {
   asset: MarketAsset;
@@ -34,12 +42,12 @@ interface MarketAssetCardProps {
   onOffer: (assetId: string, price: number) => Promise<void>;
 }
 
-const categoryLabel: Record<MarketAsset['category'], string> = {
-  art: '数字艺术',
-  photo: '摄影作品',
-  music: '音乐资产',
-  collectible: '数字藏品',
-  document: '文档凭证',
+const categoryLabel: Record<MarketAsset["category"], string> = {
+  art: "数字艺术",
+  photo: "摄影作品",
+  music: "音乐资产",
+  collectible: "数字藏品",
+  document: "文档凭证",
 };
 
 function shortenAddress(address: string) {
@@ -47,8 +55,14 @@ function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-export function MarketAssetCard({ asset, isPending = false, onBuy, onOffer }: MarketAssetCardProps) {
+export function MarketAssetCard({
+  asset,
+  isPending = false,
+  onBuy,
+  onOffer,
+}: MarketAssetCardProps) {
   const suggestedOffer = Math.max(asset.price * 0.95, 0.01);
+  const [offerPrice, setOfferPrice] = useState(suggestedOffer.toFixed(3));
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
@@ -129,8 +143,8 @@ export function MarketAssetCard({ asset, isPending = false, onBuy, onOffer }: Ma
         <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
           <div className="flex h-10 items-start gap-2 overflow-hidden text-xs leading-5 text-slate-500">
             <TagIcon className="mt-0.5 size-4 shrink-0 text-slate-400" />
-            <span className="line-clamp-2 break-all" title={`IPFS CID：${asset.ipfsCid}`}>
-              IPFS CID：{asset.ipfsCid}
+            <span className="line-clamp-2 break-all" title={`IPFS CID: ${asset.ipfsCid}`}>
+              IPFS CID: {asset.ipfsCid}
             </span>
           </div>
         </div>
@@ -178,14 +192,45 @@ export function MarketAssetCard({ asset, isPending = false, onBuy, onOffer }: Ma
           </DialogContent>
         </Dialog>
 
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => void onOffer(asset.id, Number(suggestedOffer.toFixed(3)))}
-        >
-          出价
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button type="button" variant="outline" disabled={isPending}>
+              出价
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>提交出价</DialogTitle>
+              <DialogDescription>
+                出价会先托管对应 ETH。卖家同意后，交易会立即成交并完成资产转移。
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Input
+                min="0"
+                step="0.000000000000000001"
+                type="number"
+                value={offerPrice}
+                onChange={(event) => setOfferPrice(event.target.value)}
+              />
+              <p className="text-xs text-slate-500">
+                当前一口价为 {asset.price} {asset.currency}，建议出价 {suggestedOffer.toFixed(3)} ETH。
+              </p>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">取消</Button>
+              </DialogClose>
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() => void onOffer(asset.id, Number(offerPrice))}
+              >
+                提交出价
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardFooter>
     </Card>
   );

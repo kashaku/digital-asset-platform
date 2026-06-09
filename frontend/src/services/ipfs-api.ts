@@ -18,13 +18,20 @@ export type TokenMetadata = {
   description?: string;
   image?: string;
   imageUrl?: string;
+  royaltyBps?: number;
+  royaltyRate?: number;
   attributes?: Array<{
     trait_type?: string;
-    value?: string;
+    value?: string | number;
   }>;
   properties?: {
     cid?: string;
     mime?: string;
+    royaltyBps?: number;
+  };
+  royalty?: {
+    bps?: number;
+    rate?: number;
   };
 };
 
@@ -153,15 +160,26 @@ export async function uploadMetadataToIpfs(
     name: form.name,
     description: form.description,
     image: media.uri,
+    royaltyBps: form.royaltyBps,
+    royaltyRate: form.royaltyBps / 100,
     attributes: [
       {
         trait_type: "category",
         value: form.category,
       },
+      {
+        trait_type: "royalty_bps",
+        value: form.royaltyBps,
+      },
     ],
     properties: {
       cid: media.cid,
       mime: media.mimeType,
+      royaltyBps: form.royaltyBps,
+    },
+    royalty: {
+      bps: form.royaltyBps,
+      rate: form.royaltyBps / 100,
     },
   };
 

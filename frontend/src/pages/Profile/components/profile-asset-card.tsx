@@ -15,19 +15,66 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useMarket } from "@/hooks/useMarket";
+import { useOfferMarket } from "@/hooks/useOfferMarket";
+import { useWallet } from "@/hooks/useWallet";
+import { fetchOffers, type OfferItem } from "@/services/indexer";
 import type { ProfileAsset } from "@/types/profile";
 
 type ProfileAssetCardProps = {
   asset: ProfileAsset;
 };
 
+function formatOfferPrice(priceWei: string) {
+  try {
+    return `${Number(BigInt(priceWei)) / 1e18} ETH`;
+  } catch {
+    return "0 ETH";
+  }
+}
+
+function shortenAddress(address: string) {
+  if (address.length <= 12) return address;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
   const market = useMarket();
+  const offerMarket = useOfferMarket();
+  const wallet = useWallet();
+  const [open, setOpen] = useState(false);
   const [price, setPrice] = useState("");
   const [isListed, setIsListed] = useState(asset.isListed);
   const [listedPrice, setListedPrice] = useState(asset.price);
+  const [offers, setOffers] = useState<OfferItem[]>([]);
   const [isListing, setIsListing] = useState(false);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(false);
+  const [activeBuyer, setActiveBuyer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isOwner =
+    Boolean(wallet.address && asset.owner) &&
+    wallet.address?.toLowerCase() === asset.owner?.toLowerCase();
+
+  const loadOffers = async () => {
+    setIsLoadingOffers(true);
+
+    try {
+      setOffers(await fetchOffers(Number(asset.tokenId)));
+    } catch {
+      setOffers([]);
+    } finally {
+      setIsLoadingOffers(false);
+    }
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    setError(null);
+
+    if (nextOpen) {
+      void loadOffers();
+    }
+  };
 
   const handleListForSale = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,6 +96,34 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
       setError(err instanceof Error ? err.message : "上架资产失败");
     } finally {
       setIsListing(false);
+    }
+  };
+
+  const handleAcceptOffer = async (buyer: string) => {
+    setActiveBuyer(buyer);
+    setError(null);
+
+    try {
+      if (!isOwner) {
+        throw new Error("只有当前 NFT 持有者可以接受出价。");
+      }
+
+      if (isListed) {
+        await market.cancelListing(Number(asset.tokenId));
+        setIsListed(false);
+        setListedPrice(undefined);
+      }
+
+      await offerMarket.acceptOffer(Number(asset.tokenId), buyer);
+      setOffers((currentOffers) =>
+        currentOffers.filter(
+          (offer) => offer.buyer.toLowerCase() !== buyer.toLowerCase(),
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "接受出价失败");
+    } finally {
+      setActiveBuyer(null);
     }
   };
 
@@ -87,7 +162,7 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Dialog>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button
               className="w-full border-purple-500 text-purple-600 hover:bg-purple-600 hover:text-white"
@@ -104,36 +179,89 @@ export function ProfileAssetCard({ asset }: ProfileAssetCardProps) {
           <DialogContent>
             <form onSubmit={handleListForSale}>
               <DialogHeader>
-                <DialogTitle>上架资产</DialogTitle>
+                <DialogTitle>管理资产</DialogTitle>
                 <DialogDescription>
-                  设置 Token #{asset.tokenId} 的一口价，确认后会先授权 NFT，再调用市场合约上架。
+                  设置 Token #{asset.tokenId} 的一口价，或接受买家提交的链上出价。接受后会立即成交并完成资产转移。
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="my-4 space-y-3">
-                <Input
-                  min="0"
-                  placeholder="输入价格，例如 0.1"
-                  step="0.000000000000000001"
-                  type="number"
-                  value={price}
-                  onChange={(event) => setPrice(event.target.value)}
-                />
+              <div className="my-4 space-y-5">
+                <div className="space-y-3">
+                  <Input
+                    min="0"
+                    placeholder="输入价格，例如 0.1"
+                    step="0.000000000000000001"
+                    type="number"
+                    value={price}
+                    onChange={(event) => setPrice(event.target.value)}
+                  />
+
+                  <Button disabled={isListing} type="submit">
+                    {isListing ? <Loader2Icon className="size-4 animate-spin" /> : null}
+                    确认上架
+                  </Button>
+                </div>
+
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-slate-900">收到的出价</h4>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isLoadingOffers}
+                      onClick={() => void loadOffers()}
+                    >
+                      刷新
+                    </Button>
+                  </div>
+
+                  {isLoadingOffers ? (
+                    <p className="text-sm text-slate-500">正在加载出价...</p>
+                  ) : offers.length === 0 ? (
+                    <p className="text-sm text-slate-500">当前暂无出价。</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {offers.map((offer) => (
+                        <div
+                          className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"
+                          key={`${asset.tokenId}-${offer.buyer}`}
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900">
+                              {formatOfferPrice(offer.price)}
+                            </p>
+                            <p className="truncate font-mono text-xs text-slate-500">
+                              {shortenAddress(offer.buyer)}
+                            </p>
+                          </div>
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!isOwner || activeBuyer === offer.buyer}
+                            onClick={() => void handleAcceptOffer(offer.buyer)}
+                          >
+                            {activeBuyer === offer.buyer ? (
+                              <Loader2Icon className="size-4 animate-spin" />
+                            ) : null}
+                            接受
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {error ? (
                   <Alert variant="destructive">
-                    <AlertTitle>上架失败</AlertTitle>
+                    <AlertTitle>操作失败</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 ) : null}
               </div>
 
-              <DialogFooter>
-                <Button disabled={isListing} type="submit">
-                  {isListing ? <Loader2Icon className="size-4 animate-spin" /> : null}
-                  确认上架
-                </Button>
-              </DialogFooter>
+              <DialogFooter />
             </form>
           </DialogContent>
         </Dialog>

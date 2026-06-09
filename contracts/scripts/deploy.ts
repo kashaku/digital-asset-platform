@@ -10,6 +10,7 @@ import type { ContractDeclaration } from "./export.js";
 const DECLARATIONS: ContractDeclaration[] = [
   { contract: "DigitalAssetNFT" },
   { contract: "FixedPriceMarket", args: ["$DigitalAssetNFT"] },
+  { contract: "OfferMarket", args: ["$DigitalAssetNFT"] },
 ];
 
 async function main() {

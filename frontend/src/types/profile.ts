@@ -2,6 +2,7 @@ export type ProfileAsset = {
   tokenId: string;
   title: string;
   imageUrl: string;
+  owner?: string;
   isListed: boolean;
   price?: string;
 };
