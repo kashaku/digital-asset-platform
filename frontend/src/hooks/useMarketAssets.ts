@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useMarket } from "@/hooks/useMarket";
+import { useOfferMarket } from "@/hooks/useOfferMarket";
+import { useWallet } from "@/hooks/useWallet";
 import {
   calculateMarketStats,
   fetchMarketAssets,
@@ -20,14 +22,8 @@ const DEFAULT_FILTERS: MarketFilters = {
 };
 
 function toApiSort(sort: MarketSort): MarketApiSort {
-  if (sort === "price-asc") {
-    return "price_asc";
-  }
-
-  if (sort === "price-desc") {
-    return "price_desc";
-  }
-
+  if (sort === "price-asc") return "price_asc";
+  if (sort === "price-desc") return "price_desc";
   return "latest";
 }
 
@@ -51,19 +47,6 @@ function sortAssets(assets: MarketAsset[], sort: MarketSort) {
   );
 }
 
-/**
- * 市场页数据 Hook。
- *
- * 职责：
- * - 读取 Python REST API 聚合后的市场资产列表；
- * - 在前端完成关键词、分类和版税排序等展示层筛选；
- * - 管理 loading / error / activeAssetId 等页面状态；
- * - 为页面保留购买和出价入口。
- *
- * 注意：
- * - 一口价购买属于链上写操作，应接入 services/web3/marketContract.ts；
- * - 当前 ABI 不支持 Offer，出价只作为后续扩展入口保留。
- */
 export function useMarketAssets() {
   const [rawAssets, setRawAssets] = useState<MarketAsset[]>([]);
   const [filters, setFilters] = useState<MarketFilters>(DEFAULT_FILTERS);
@@ -71,6 +54,8 @@ export function useMarketAssets() {
   const [error, setError] = useState<string | null>(null);
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null);
   const market = useMarket();
+  const offerMarket = useOfferMarket();
+  const wallet = useWallet();
 
   useEffect(() => {
     let ignored = false;
@@ -132,24 +117,15 @@ export function useMarketAssets() {
   const stats = useMemo(() => calculateMarketStats(rawAssets), [rawAssets]);
 
   const setKeyword = (keyword: string) => {
-    setFilters((current) => ({
-      ...current,
-      keyword,
-    }));
+    setFilters((current) => ({ ...current, keyword }));
   };
 
   const setCategory = (category: MarketAssetCategory) => {
-    setFilters((current) => ({
-      ...current,
-      category,
-    }));
+    setFilters((current) => ({ ...current, category }));
   };
 
   const setSort = (sort: MarketSort) => {
-    setFilters((current) => ({
-      ...current,
-      sort,
-    }));
+    setFilters((current) => ({ ...current, sort }));
   };
 
   const resetFilters = () => {
@@ -169,6 +145,12 @@ export function useMarketAssets() {
 
       await market.buyAsset(Number(targetAsset.tokenId), String(targetAsset.price));
 
+      try {
+        await offerMarket.cancelStaleOffers(Number(targetAsset.tokenId));
+      } catch {
+        // 清理失效报价失败不影响一口价购买结果。
+      }
+
       setRawAssets((currentAssets) =>
         currentAssets.map((asset) =>
           asset.id === assetId ? { ...asset, status: "sold" } : asset,
@@ -181,7 +163,7 @@ export function useMarketAssets() {
     }
   };
 
-  const submitOffer = async (assetId: string) => {
+  const submitOffer = async (assetId: string, price: number) => {
     setActiveAssetId(assetId);
     setError(null);
 
@@ -192,11 +174,18 @@ export function useMarketAssets() {
         throw new Error("未找到待出价资产");
       }
 
-      /**
-       * 当前 ABI 不支持 Offer。
-       * 如果后续扩展合约，再在 services/web3/marketContract.ts 中接入 createOffer。
-       */
-      throw new Error("当前合约 ABI 暂不支持 Offer，出价功能应作为后续扩展。");
+      if (!Number.isFinite(price) || price <= 0) {
+        throw new Error("请输入有效的出价金额");
+      }
+
+      if (
+        wallet.address &&
+        targetAsset.owner.toLowerCase() === wallet.address.toLowerCase()
+      ) {
+        throw new Error("不能对自己持有或上架的资产出价，请切换到其他账户。");
+      }
+
+      await offerMarket.makeOffer(Number(targetAsset.tokenId), String(price));
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交出价失败");
     } finally {
