@@ -5,6 +5,7 @@ import type {
 } from "@/types/mint";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const IPFS_GATEWAY_URL = (import.meta.env.VITE_IPFS_GATEWAY_URL ?? "https://ipfs.io").replace(/\/$/, "");
 const MOCK_METADATA_STORAGE_KEY = "assetchain:mock-metadata";
 const LEGACY_MOCK_MEDIA_STORAGE_KEY = "assetchain:mock-media";
 const MOCK_MEDIA_DB_NAME = "assetchain-mock-ipfs";
@@ -150,9 +151,9 @@ async function readMockMediaUrl(uri: string) {
   }
 }
 
-function toGatewayUrl(uri: string) {
+export function ipfsUriToGatewayUrl(uri: string) {
   if (uri.startsWith("ipfs://")) {
-    return `https://ipfs.io/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
+    return `${IPFS_GATEWAY_URL}/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
   }
 
   return uri;
@@ -170,7 +171,7 @@ async function resolveGatewayUrl(uri: string) {
     }
   }
 
-  return toGatewayUrl(uri);
+  return ipfsUriToGatewayUrl(uri);
 }
 
 async function normalizeMockMetadata(metadata: TokenMetadata): Promise<TokenMetadata> {
@@ -207,7 +208,7 @@ export async function resolveTokenMetadata(tokenURI: string): Promise<TokenMetad
   }
 
   try {
-    const response = await fetch(toGatewayUrl(tokenURI), {
+    const response = await fetch(ipfsUriToGatewayUrl(tokenURI), {
       headers: { Accept: "application/json" },
     });
 

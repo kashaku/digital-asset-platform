@@ -3,7 +3,11 @@ import { BrowserProvider, Contract } from "ethers";
 import { FIXED_PRICE_ADDRESS, NFT_ADDRESS } from "@/config/contract";
 import DigitalAssetNFTABI from "@/abis/DigitalAssetNFT.json";
 import { fetchListings, type ListingItem } from "@/services/indexer";
-import { resolveTokenMetadata, type TokenMetadata } from "@/services/ipfs-api";
+import {
+  ipfsUriToGatewayUrl,
+  resolveTokenMetadata,
+  type TokenMetadata,
+} from "@/services/ipfs-api";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
@@ -240,7 +244,7 @@ function resolveImageUrl(uri?: string) {
   }
 
   if (uri.startsWith("ipfs://")) {
-    return `https://ipfs.io/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
+    return ipfsUriToGatewayUrl(uri);
   }
 
   return uri;
@@ -472,7 +476,7 @@ function toMarketAsset(item: ApiMarketAssetItem): MarketAsset {
 export async function fetchMarketAssets(
   params: GetMarketAssetsParams = {},
 ): Promise<MarketAsset[]> {
-  if (!API_BASE_URL) {
+  if (true) {
     try {
       const data = await fetchListings({
         page: params.page ?? 1,
@@ -483,7 +487,11 @@ export async function fetchMarketAssets(
       });
 
       return await Promise.all(data.items.map(listingToMarketAsset));
-    } catch {
+    } catch (error) {
+      if (API_BASE_URL) {
+        throw error;
+      }
+
       return mockMarketAssets;
     }
   }
