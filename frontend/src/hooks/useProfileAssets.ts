@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { fetchProfileData } from "@/services/profile-api";
 import { fetchListings, fetchNFTs } from "@/services/indexer";
-import { resolveTokenMetadata } from "@/services/ipfs-api";
+import { ipfsUriToGatewayUrl, resolveTokenMetadata } from "@/services/ipfs-api";
 import type { ProfileData } from "@/types/profile";
 
 const EMPTY_PROFILE_DATA: ProfileData = {
@@ -31,7 +31,7 @@ function resolveImageUrl(uri?: string) {
   }
 
   if (uri.startsWith("ipfs://")) {
-    return `https://ipfs.io/ipfs/${uri.replace(/^ipfs:\/\//, "")}`;
+    return ipfsUriToGatewayUrl(uri);
   }
 
   return uri;

@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import { startScanner, type WatchedContract } from './scanner.js';
 import apiRoutes from './api.js';
+import ipfsRoutes from './ipfs.js';
 
 const envPath = resolve(import.meta.dirname, '../.env');
 if (existsSync(envPath)) config({ path: envPath });
@@ -61,6 +62,7 @@ async function main() {
 
   const app = express();
   app.use(cors());
+  app.use('/api', ipfsRoutes);
   app.use('/api', apiRoutes);
 
   app.listen(PORT, () => {

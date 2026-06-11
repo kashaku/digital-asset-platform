@@ -99,9 +99,15 @@ async function replayEvents(watched: WatchedContract[], fromBlock: number, toBlo
   const allLogs = await Promise.all(
     watched.map(w => queryEvents(w.contract, w.events, fromBlock, toBlock))
   );
-  for (const logs of allLogs) {
-    for (const log of logs) _handleEvent(log);
-  }
+  const logs = allLogs
+    .flat()
+    .sort((a, b) =>
+      a.blockNumber === b.blockNumber
+        ? a.index - b.index
+        : a.blockNumber - b.blockNumber,
+    );
+
+  for (const log of logs) _handleEvent(log);
 }
 
 async function queryEvents(
