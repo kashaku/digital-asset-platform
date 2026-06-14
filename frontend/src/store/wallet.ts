@@ -15,6 +15,8 @@ export const LOCAL_CHAIN_CONFIG = {
   },
 };
 
+const WALLET_SESSION_STORAGE_KEY = 'assetchain:wallet-session';
+
 type WalletError = {
   code?: number | string;
   message?: string;
@@ -34,8 +36,10 @@ interface WalletState {
   hasMetaMask: boolean;
   error: string | null;
   connect: () => Promise<void>;
+  restoreConnection: () => Promise<void>;
   switchToLocalNetwork: () => Promise<void>;
   disconnect: () => void;
+  clearRuntimeConnection: () => void;
   syncAccount: (accounts: string[]) => Promise<void>;
   syncChain: (chainId: string) => void;
 }
@@ -92,6 +96,44 @@ function clearSignatureState() {
     nonce: null,
     signedAt: null,
   };
+}
+
+type PersistedWalletSession = {
+  address: string;
+  signature: string | null;
+  signedMessage: string | null;
+  nonce: string | null;
+  signedAt: string | null;
+};
+
+function readWalletSession(): PersistedWalletSession | null {
+  if (typeof localStorage === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(WALLET_SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) as PersistedWalletSession : null;
+  } catch {
+    localStorage.removeItem(WALLET_SESSION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function writeWalletSession(session: PersistedWalletSession) {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(WALLET_SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+function clearWalletSession() {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem(WALLET_SESSION_STORAGE_KEY);
 }
 
 export const useWalletStore = create<WalletState>((set, get) => ({
@@ -179,6 +221,14 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const { message, nonce, signedAt } = createLoginMessage(address);
       const signature = await signer.signMessage(message);
 
+      writeWalletSession({
+        address,
+        signature,
+        signedMessage: message,
+        nonce,
+        signedAt,
+      });
+
       set({
         signature,
         signedMessage: message,
@@ -192,6 +242,71 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         ...clearSignatureState(),
         isSigning: false,
         error: normalizeWalletError(error, '已取消签名。'),
+      });
+    }
+  },
+
+  restoreConnection: async () => {
+    const session = readWalletSession();
+    const ethereum = window.ethereum;
+
+    if (!session || !ethereum?.isMetaMask) {
+      set({ hasMetaMask: hasMetaMaskProvider() });
+      return;
+    }
+
+    try {
+      const accounts = getAccounts(
+        await ethereum.request({ method: 'eth_accounts' }),
+      );
+      const restoredAddress = accounts.find(
+        (account) => account.toLowerCase() === session.address.toLowerCase(),
+      );
+
+      if (!restoredAddress) {
+        set({
+          ...clearSignatureState(),
+          address: null,
+          provider: null,
+          signer: null,
+          chainId: null,
+          hasMetaMask: true,
+          isConnecting: false,
+          isSigning: false,
+          error: null,
+        });
+        return;
+      }
+
+      const provider = new BrowserProvider(ethereum);
+      const signer = await provider.getSigner(restoredAddress);
+      const chainId = Number((await provider.getNetwork()).chainId);
+
+      set({
+        address: restoredAddress,
+        provider,
+        signer,
+        chainId,
+        signature: session.signature,
+        signedMessage: session.signedMessage,
+        nonce: session.nonce,
+        signedAt: session.signedAt,
+        hasMetaMask: true,
+        isConnecting: false,
+        isSigning: false,
+        error: null,
+      });
+    } catch (error) {
+      set({
+        ...clearSignatureState(),
+        address: null,
+        provider: null,
+        signer: null,
+        chainId: null,
+        hasMetaMask: hasMetaMaskProvider(),
+        isConnecting: false,
+        isSigning: false,
+        error: normalizeWalletError(error, '钱包登录状态恢复失败。'),
       });
     }
   },
@@ -253,6 +368,22 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   disconnect: () => {
+    clearWalletSession();
+
+    set({
+      ...clearSignatureState(),
+      address: null,
+      provider: null,
+      signer: null,
+      chainId: null,
+      isConnecting: false,
+      isSigning: false,
+      hasMetaMask: hasMetaMaskProvider(),
+      error: null,
+    });
+  },
+
+  clearRuntimeConnection: () => {
     set({
       ...clearSignatureState(),
       address: null,
@@ -268,6 +399,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   syncAccount: async (accounts: string[]) => {
     const { provider } = get();
+    const session = readWalletSession();
 
     if (accounts.length === 0) {
       set({
@@ -277,6 +409,10 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         isSigning: false,
       });
       return;
+    }
+
+    if (session && accounts[0].toLowerCase() !== session.address.toLowerCase()) {
+      clearWalletSession();
     }
 
     if (provider) {

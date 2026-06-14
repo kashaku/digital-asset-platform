@@ -7,18 +7,25 @@ export function useWallet() {
 
   useEffect(() => {
     const ethereum = window.ethereum;
+    void wallet.restoreConnection();
+
     if (!ethereum) return;
 
     ethereum.on('accountsChanged', wallet.syncAccount);
     ethereum.on('chainChanged', wallet.syncChain);
-    ethereum.on('disconnect', wallet.disconnect);
+    ethereum.on('disconnect', wallet.clearRuntimeConnection);
 
     return () => {
       ethereum.removeListener?.('accountsChanged', wallet.syncAccount);
       ethereum.removeListener?.('chainChanged', wallet.syncChain);
-      ethereum.removeListener?.('disconnect', wallet.disconnect);
+      ethereum.removeListener?.('disconnect', wallet.clearRuntimeConnection);
     };
-  }, [wallet.disconnect, wallet.syncAccount, wallet.syncChain]);
+  }, [
+    wallet.clearRuntimeConnection,
+    wallet.restoreConnection,
+    wallet.syncAccount,
+    wallet.syncChain,
+  ]);
 
   return {
     address: wallet.address,
